@@ -183,9 +183,13 @@ namespace SixtySLike
         }
 
         // v0.45:队友一旦永久消失,营地边就不会再站出一个"他"。写成纯函数是为了让 DemoChecks 直接钉住它。
+        // ⚠ 这里 **不能引用静态 DB** —— 那个字段只在 `Begin(GameRoot)` 里赋值,编辑器自检没有场景、
+        //    它一直是 null,一调就 NullReferenceException(v0.48 你跑 `运行自检` 撞到的就是这条)。
+        //    改按事件的 key 认,与 `Special` 那一整批 `switch (e.key)` 同一种写法。
+        public const string FakeMateKey = "fakemate";
         public static bool NoTeammateBlocks(GameEventSO e, RunState s)
         {
-            return e == DB.FakeMate && !s.mate.present;
+            return e != null && e.key == FakeMateKey && s != null && !s.mate.present;
         }
 
         public static string StolenName
