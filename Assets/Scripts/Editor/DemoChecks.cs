@@ -201,12 +201,14 @@ namespace SixtySLike
             Eq(R("crudeflare").materials, 3, "土制信号弹 材料3(补录⑤)");
             Check(R("crudeflare").oncePerRun, "土制信号弹每局限 1 发");
             Eq(R("net").materials, 4, "渔网 材料4");
-            // v0.47:篝火 升格成建筑(灶)⇒ 材料2/体力1/吃打火石 那三样一起作废,火种改由"点燃"时花
+            // v0.47:篝火 升格成建筑(灶)⇒ 原来那三样(材料2 / 体力1 / 当晚烧一次)一起作废
             Eq(R("campfire").materials, 3, "篝火(垒灶) 材料3");
             Eq(R("campfire").stamina, 2, "篝火(垒灶) 2 体力");
             Check(R("campfire").isStructure && R("campfire").resultStructure == Database.Campfire,
                   "篝火 现在是建筑(灶)—— 它不再是「当晚烧一次」的那条配方");
-            Check(!R("campfire").consumesFlint, "建造 篝火 不吃火种(火种是「点燃」那一手的价,见 LightFire)");
+            // ⚠ 这里原来有一条 `Check(!consumesFlint, "建造不吃火种")` —— 那是 v0.48 早期的读法,
+            //   被你追答的"垒灶当天默认点火"推翻了(建造那一手就点着 ⇒ 吃一块火种)。资产侧已改对,断言漏改,
+            //   自检报的就是这一条。**现在这条只由 V047() 统一管**(火模型的断言集中在那里,不两头维护)。
             Eq(R("wall").materials, 5, "围墙 材料5");
             Eq(R("signalfire").materials, 6, "信号火堆 材料6");
 
