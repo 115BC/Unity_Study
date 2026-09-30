@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97938154da684443856ff722e2e1733b, type: 3}
+  m_Name: claim_fish
+  m_EditorClassIdentifier: 
+  item: {fileID: 11400000, guid: 3b03c039e8f4218c337f93672efefc0d, type: 2}
+  source: fish
+  chance: 0.01
+  loreText: "\u7F16\u53F7 04\u300105\u300106\u300206 \u90A3\u884C\u7684\u540D\u5B57\u88AB\u6C34\u6D07\u5F00\u4E86 \u2014\u2014 \u4F60\u662F\u7B2C 6 \u4E2A\u3002"

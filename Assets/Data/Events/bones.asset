@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: bones
+  m_EditorClassIdentifier: 
+  key: bones
+  displayName: "\u9AB8\u9AA8"
+  description: "\u4ECA\u665A\u4F60\u770B\u89C1\u6F6E\u6C34\u4F3C\u4E4E\u5C06\u4EC0\u4E48\u4E1C\u897F\u5377\u4E0A\u4E86\u6C99\u6EE9\u3002"
+  inEventBag: 0
+  nightlyIndependentRoll: 0.01
+  priority: 0
+  minNight: 0
+  oncePerRun: 1
+  neverInBag: 1
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: b37243fa3c8c4e5488e1cd91deada88e, type: 2}
+  - {fileID: 11400000, guid: 30657cf03a654cf1b12da75b81ab6b82, type: 2}

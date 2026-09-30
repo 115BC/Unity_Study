@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bc8060300ce4f92b8d32199bccd1a7e, type: 3}
+  m_Name: blanket
+  m_EditorClassIdentifier: 
+  key: blanket
+  displayName: "\u6BEF\u5B50"
+  desc: "\u4F4E\u6E29\u591C\u514D\u75AB / \u8840\u6708\u591C\u88F9\u4F4F\u81EA\u5DF1(\u961F\u53CB\u7CBE\u795E\u4E0D\u964D\u5C42)\u3002\u672C\u6B21\u5FC5\u635F\u3002\u4E0D\u80FD\u906E\u6B66\u5668a\u3002"
+  slots: 1
+  cabinMin: 1
+  cabinMax: 1
+  spawnPoints: 4
+  highValue: 0
+  consumable: 0
+  tradeable: 1
+  lore: 0
+  indestructible: 0
+  fullnessRestore: 0
+  hydrationRestore: 0
+  staminaRestore: 0
+  hpRestore: 0
+  curesSickness: 0
+  makesSick: 0
+  medicineSuccessChance: 1
+  baitMissReduction: 0
+  breakChanceStart: 0.2
+  repairMaterials: 1
+  repairStamina: 1
+  repairFreeOfMaterials: 0

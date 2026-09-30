@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9dc8f22fcd30417990f7124b462cce75, type: 3}
+  m_Name: claim
+  m_EditorClassIdentifier: 
+  key: claim
+  displayName: "\u4E09\u5F20\u7F16\u53F7\u8FDE\u7EED\u7684\u7406\u8D54\u5355"
+  desc: "\u9493\u9C7C\u6742\u7269(1%\u3001\u6574\u5C40\u4E00\u6B21)\u3002\u7F16\u53F7 04/05/06,06 \u90A3\u884C\u7684\u540D\u5B57\u88AB\u6C34\u6D07\u5F00\u4E86;04 \u4E0E 05 \u5C31\u662F\u5408\u5F71\u91CC\u7AD9\u5728\u98DE\u673A\u524D\u90A3\u4E24\u4E2A\u4EBA\u3002"
+  slots: 1
+  cabinMin: 0
+  cabinMax: 0
+  spawnPoints: 3
+  highValue: 0
+  consumable: 0
+  tradeable: 0
+  lore: 1
+  indestructible: 0
+  fullnessRestore: 0
+  hydrationRestore: 0
+  staminaRestore: 0
+  hpRestore: 0
+  curesSickness: 0
+  makesSick: 0
+  medicineSuccessChance: 1

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: fakemate
+  m_EditorClassIdentifier: 
+  key: fakemate
+  displayName: "\u5047\u961F\u53CB"
+  description: "\u4E00\u4E2A\u770B\u4E0D\u6E05\u7684\u4EBA\u5F71\u7AD9\u5728\u8425\u5730\u8FB9,\u8BF4\u4ED6\u4E0D\u8212\u670D\u3002v0.45:\u8425\u5730\u91CC\u6CA1\u6709\u961F\u53CB \u21D2 \u8FD9\u4E00\u665A\u5B83\u6839\u672C\u4E0D\u4F1A\u51FA\u73B0\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 5
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 74ae07e7835d9be46bccb217ea609adf, type: 2}
+  - {fileID: 11400000, guid: 44379ce9c7d96e049a7bfdb2b4420832, type: 2}

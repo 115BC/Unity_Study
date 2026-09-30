@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: twolights
+  m_EditorClassIdentifier: 
+  key: twolights
+  displayName: "\u4E24\u70B9\u5149"
+  description: "\u5F71\u602A\u8FC7\u540E\u7684\u591C\u665A,\u5E87\u62A4\u6240\u5916\u51FA\u73B0\u4E24\u70B9\u5149\u3002(\u8865\u6551\u7A97\u53E3,\xA711-9)"
+  inEventBag: 0
+  nightlyIndependentRoll: 0
+  priority: 0
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 1
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 5fc1646cca112944d93baf5477c26e43, type: 2}
+  - {fileID: 11400000, guid: 9247d503de24e7d42ae829c988cc3818, type: 2}

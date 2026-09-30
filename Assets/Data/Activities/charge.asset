@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a90ae30ef740ef9b3debcb6ec857b2, type: 3}
+  m_Name: charge
+  m_EditorClassIdentifier: 
+  key: charge
+  displayName: "\u624B\u6447\u5145\u7535"
+  cost: 1
+  costAllRemaining: 0
+  oncePerDay: 0
+  requiresDailyRoll: 0
+  requiresAnyOf: []
+  requiresStructure: 
+  location: "\u8425\u5730"
+  desc: "\u5168\u6E38\u620F\u6700\u8D35\u7684\u5355\u4E2A\u767D\u5929\u884C\u52A8\u3002\u5145\u6EE1\u540E\u624B\u7535\u7B52\u53EF\u7528\u4E00\u665A\u3002"

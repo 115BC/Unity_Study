@@ -1,0 +1,45 @@
+# ⚠ 这台机器上 core.autocrlf=true,而这个项目 **全部文件是 LF**。
+# Unity 写的 .asset / .meta / .unity 就是这个字节形状,开发文档 §7.2 第一条铁律依赖它:
+#   "离线手改资产必须与 Unity 自己输出的格式逐字节一致"。
+# 若让 git 在 checkout 时把行尾换成 CRLF,等于一次 git 操作改坏 489 个文件 —— Unity 会全部重导入,
+# 而且那种"格式偏离 → 后面的字段静默丢失"的事故就是这么造出来的。
+# 所以这里显式锁死:**仓库与工作树都用 LF**(autocrlf 被 .gitattributes 覆盖,不需要动任何 git 配置)。
+* text=auto eol=lf
+
+# Unity 场景/资产/预制:一律按文本 LF 处理(它们确实是 YAML 文本),diff 可读、可合并
+*.asset  text eol=lf
+*.meta   text eol=lf
+*.unity  text eol=lf
+*.prefab text eol=lf
+*.mat    text eol=lf
+*.physicMaterial text eol=lf
+
+# 代码与文档
+*.cs    text eol=lf
+*.css   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.shader text eol=lf
+
+# 真二进制:别让 git 碰行尾,也别在 diff 里展开
+*.TTF   binary
+*.ttf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.fbx   binary
+*.obj   binary
+*.dll   binary
+*.a     binary
+*.so    binary
+*.zip   binary
+*.unitypackage binary
+
+# 生成物不该出现,万一有人提交它要一眼看见
+Library/  export-ignore
+Temp/     export-ignore

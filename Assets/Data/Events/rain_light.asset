@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: rain_light
+  m_EditorClassIdentifier: 
+  key: rain_light
+  displayName: "\u5C0F\u96E8"
+  description: "\u5C4B\u6A90\u5F00\u59CB\u6EF4\u6C34\u3002"
+  inEventBag: 0
+  nightlyIndependentRoll: 0
+  priority: 0
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 1
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 21ef55cfc0201b04cadbe49dbd960295, type: 2}
+  - {fileID: 11400000, guid: f2cc61a2310621d4388445a4c98384fb, type: 2}

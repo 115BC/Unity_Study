@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: tide
+  m_EditorClassIdentifier: 
+  key: tide
+  displayName: "\u6DA8\u6F6E"
+  description: "\u6D77\u6C34\u6F2B\u8FDB\u8425\u5730,\u9000\u53BB\u4E4B\u540E\u6C99\u6EE9\u4E0A\u7559\u4E0B\u4E00\u7247\u65B0\u7684\u4E1C\u897F\u3002v0.16:\u5EFA\u4E86\u56F4\u5899\u5C31\u6321\u5F97\u4F4F(\u4E0D\u4E22\u9732\u5929\u7269\u8D44)\u3002v0.24:\u5C38\u9AA8\u5DF2\u7ECF\u72EC\u7ACB\u6210\u300E\u9AB8\u9AA8\u300F\u4E8B\u4EF6,\u4E0E\u8FD9\u573A\u65E0\u5173\u4E86\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 10
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 3ad2e7740baabae4ba0ff3e43060be23, type: 2}
+  - {fileID: 11400000, guid: 608633e77d0f2c24b9a44d55e7f9cc86, type: 2}

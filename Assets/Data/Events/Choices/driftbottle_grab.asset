@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a5def9e5894b4ca598b61204f14d95, type: 3}
+  m_Name: driftbottle_grab
+  m_EditorClassIdentifier: 
+  key: grab
+  label: "\u6E14\u7F51\u635E / \u6F5C\u6C34\u88C5\u7F6E\u53D6"
+  resultHint: "2 \u4F53\u529B \u2192 \u5F97\u5230 1 \u4E2A\u6F02\u6D41\u74F6"
+  requiresItem: {fileID: 0}
+  requiresFire: 0
+  requiresStructure: 
+  requiresTeammate: 0
+  requiresNoTeammate: 0
+  costStamina: 0
+  nextDayStaminaPenalty: 0
+  breakChanceNight: 0
+  consumesItem: 0
+  drainsFlashlight: 0
+  recoversDamaged: 0
+  rewardFood: 0
+  applySick: 0
+  alwaysAvailable: 0

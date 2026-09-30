@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: palmtree
+  m_EditorClassIdentifier: 
+  key: palmtree
+  displayName: "\u6930\u6811"
+  description: "\u6D77\u98CE\u5439\u5F97\u6930\u6811\u6447\u6643\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 5
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 6648c1ceb1c9665e4bc23c858d46f3b9, type: 2}
+  - {fileID: 11400000, guid: c0207c3d1abe4df4baa11745eecff467, type: 2}

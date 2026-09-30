@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eb6ce9d834146299008261b663f97ca, type: 3}
+  m_Name: BalanceConfig
+  m_EditorClassIdentifier: 
+  scavengerSeconds: 60
+  carrySlots: 4
+  cabinTotalSlotsMin: 31
+  cabinTotalSlotsMax: 42
+  teammateSpeedPenalty: 0.3
+  hazardSecondsCost: 2
+  exitZoneRadius: 2.2
+  exitZoneRadiusCarrying: 2.53
+  staminaMax: 3
+  hpMax: 5
+  survivalDaysToEndB: 50
+  foodPerCanFullness: 0.25
+  playerFullnessDecayPerDay: 0.22
+  chocolateStamina: 3
+  restStamina: 2
+  restCost: 2
+  exploreRefreshBase: 0.3
+  exploreRefreshRamp: 0.05
+  exploreRefreshCap: 1
+  exploreMaterialChance: 0.3
+  exploreMaterialRolls: 6
+  exploreFoodChance: 0.6
+  exploreFoodRolls: 6
+  exploreHerbChance: 0.2
+  exploreHerbRolls: 1
+  campAccidentChance: 0.25
+  fishMissBase: 0.2
+  fishMissPerDay: 0.03
+  fishMissCap: 0.8
+  baitCatchFloor: 0.8
+  baitConsumeChance: 0.8
+  weakToolChanceMultiplier: 0.5
+  diveFoodChance: 0.6
+  diveFoodRolls: 6
+  diveBaitChance: 0.4
+  diveBaitRolls: 3
+  diveInjuryChance: 0.08
+  keyChanceFish: 0.05
+  keyChanceDive: 0.15
+  rescueRollPerNight: 0.2
+  calmNightChance: 0.2
+  bonesNightlyChance: 0.01
+  ghostShipBonesChance: 0.3
+  flashlightRescueChance: 0.5
+  flashlightChargeMax: 2
+  crudeFlareSuccessChance: 0.6
+  coconutHitChance: 0.3
+  shadowNightMin: 20
+  shadowNightMax: 25
+  bloodMoonDiveSuccess: 0.6
+  bloodMoonMapChance: 0.3
+  gullRefreshBase: 0.2
+  gullRefreshRamp: 0.01
+  gullEndingCount: 4
+  medicineSuccessChance: 0.7
+  teammateSkillChance: 0.4
+  talkMoodFirstTalk: 2
+  talkMoodLater: 1
+  teammateMoodForcedDropDays: 3
+  teammateMoodDailyDropChance: 0.35
+  teammateSickSelfHeal: 0.4
+  nextDayStaminaPenaltySick: 1

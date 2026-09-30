@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d465b6b2d9e046d49d9806dbdfc4e7e4, type: 3}
+  m_Name: signalfire
+  m_EditorClassIdentifier: 
+  key: signalfire
+  displayName: "\u4FE1\u53F7\u706B\u5806"
+  materials: 6
+  stamina: 2
+  resultItem: {fileID: 0}
+  resultStructure: signalfire
+  requiresExtraItem: {fileID: 0}
+  requiresExtraItemCount: 0
+  requiresStructure: campfire
+  supersededBy: {fileID: 0}
+  oncePerRun: 0
+  isStructure: 1
+  consumesFlint: 1
+  desc: "v0.48:\u5B83\u662F **\u7BDD\u706B\u7684\u4E0A\u4F4D\u5E73\u66FF** \u2014\u2014 \u5FC5\u987B\u5148\u6709 \u7BDD\u706B \u624D\u5EFA\u5F97\u8D77\u6765(\u00A76 \u76EE\u524D\u552F\u4E00\u7684\u4E00\u9053\u524D\u7F6E),\u4EF7 \u6750\u65996 + 2 \u4F53\u529B,\u5E76\u4E14 **\u5EFA\u597D\u5F53\u573A\u70B9\u7740**\u3001\u540C\u6837\u53EA\u70E7\u4E24\u4E2A\u665A\u4E0A\u3002\u70E7\u7740\u7684\u90A3\u4E00\u665A \u8F6E\u8239/\u5E7D\u7075\u8239/\u641C\u5BFB\u98DE\u673A **\u76F4\u63A5\u5224\u5B9A\u901A\u8FC7**(\u7ED3\u5C40A / H);\u4E24\u665A\u8FC7\u6216\u88AB \u6DA8\u6F6E \u6253\u6E7F \u21D2 \u5B83\u8FDB\u5165\u300C\u574F\u300D,\u5728\u7EF4\u4FEE\u9762\u677F\u91CC\u82B1\u4E00\u5757\u706B\u79CD\u91CD\u65B0\u70B9\u71C3 \u2014\u2014 **\u6240\u4EE5\u300C\u6750\u65996 \u6362\u4E00\u6B21\u5FC5\u4E2D\u300D\u662F\u4E0D\u6210\u7ACB\u7684,\u8981\u7684\u662F\u300C\u90A3\u4E00\u665A\u5B83\u5F97\u771F\u5728\u70E7\u300D**\u3002\u7184\u706D\u65F6\u5B83\u8FDE \u7BDD\u706B \u7684\u4F5C\u7528\u4E5F\u4E0D\u518D\u63D0\u4F9B(\u5B83\u662F\u5E73\u66FF,\u4E0D\u662F\u53E0\u52A0)\u3002"

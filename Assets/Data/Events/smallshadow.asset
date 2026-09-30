@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: smallshadow
+  m_EditorClassIdentifier: 
+  key: smallshadow
+  displayName: "\u5C0F\u5F71\u602A"
+  description: "\u6BD4\u5F71\u602A\u5C0F\u4E00\u53F7\u7684\u9ED1\u5F71,\u53EA\u6709\u4E00\u70B9\u773C\u5149,\u7ED5\u7740\u8425\u5730\u8F6C\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 5
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: bbc4bd86bf61cb1429f611d80e72bf86, type: 2}
+  - {fileID: 11400000, guid: 12ffa6538b5bffc4381640354b73a131, type: 2}
+  - {fileID: 11400000, guid: 1f65da3be3211574fbc46b9594b40a70, type: 2}
+  - {fileID: 11400000, guid: 616576338ef97374fa100fd1ff885aaf, type: 2}

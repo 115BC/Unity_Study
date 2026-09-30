@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a90ae30ef740ef9b3debcb6ec857b2, type: 3}
+  m_Name: eat
+  m_EditorClassIdentifier: 
+  key: eat
+  displayName: "\u5403\u4E1C\u897F"
+  cost: 0
+  costAllRemaining: 0
+  oncePerDay: 0
+  requiresDailyRoll: 0
+  requiresAnyOf: []
+  requiresStructure: 
+  location: "\u8425\u5730"
+  desc: "1 \u4EFD\u7F50\u5934 = \u56DE 25% \u9971\u98DF\u30010 \u4F53\u529B;\u6EE1\u9971\u98DF\u65F6\u5403
+    = \u6D6A\u8D39\u3002"

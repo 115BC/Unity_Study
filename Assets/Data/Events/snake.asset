@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: snake
+  m_EditorClassIdentifier: 
+  key: snake
+  displayName: "\u6BD2\u86C7 / \u87D1\u8782"
+  description: "\u8425\u5730\u91CC\u6709\u7EC6\u5C0F\u7684\u722C\u884C\u58F0\u3002v0.16:\u5EFA\u4E86\u56F4\u5899\u8FD9\u4E00\u665A\u5B83\u6839\u672C\u8FDB\u4E0D\u6765(\u4E8B\u4EF6\u4E0D\u51FA\u73B0,\u6539\u62BD\u522B\u7684)\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 3
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 2c1d12bb29ca54d46a8d5215655a3d8c, type: 2}
+  - {fileID: 11400000, guid: 1490a179cfe4e2149970174a32f8ff39, type: 2}
+  - {fileID: 11400000, guid: 92b12bac1344adf41b6b33cf60da99d5, type: 2}

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: monkeyfriendly
+  m_EditorClassIdentifier: 
+  key: monkeyfriendly
+  displayName: "\u53CB\u5584\u7684\u7334\u5B50"
+  description: "\u4E24\u53EA\u7334\u5B50\u5750\u6210\u4E00\u6392,\u628A\u5B83\u4EEC\u60F3\u6362\u7684\u63A8\u7ED9\u4F60\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 6
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 06c3989e86850d242bec44c7e0a61e37, type: 2}
+  - {fileID: 11400000, guid: bf6fd224bfe32ff4fa094c4e63d7fc63, type: 2}

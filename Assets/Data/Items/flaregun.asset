@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9dc8f22fcd30417990f7124b462cce75, type: 3}
+  m_Name: flaregun
+  m_EditorClassIdentifier: 
+  key: flaregun
+  displayName: "\u4FE1\u53F7\u67AA"
+  desc: "v0.19:\u5B83\u53D6\u4EE3\u4E86\u539F\u6765\u6563\u5237\u7684 \u4FE1\u53F7\u5F39 \u2014\u2014 \u67AA\u4E0D\u4F1A\u88AB\u6D88\u8017\u3001\u4E5F\u4E0D\u4F1A\u574F,\u8FDB\u50A8\u7269\u7BB1\u65F6\u81EA\u5E26 1 \u53D1 \u4FE1\u53F7\u5F39\u3002\u6CA1\u6709\u5B83\u5C31\u6253\u4E0D\u51FA\u4EFB\u4F55\u5F39(\u571F\u5236\u4FE1\u53F7\u5F39 \u4E5F\u8981\u7528\u5B83)\u3002"
+  slots: 1
+  cabinMin: 1
+  cabinMax: 1
+  spawnPoints: 4
+  highValue: 1
+  consumable: 0
+  tradeable: 1
+  lore: 0
+  indestructible: 0
+  fullnessRestore: 0
+  hydrationRestore: 0
+  staminaRestore: 0
+  hpRestore: 0
+  curesSickness: 0
+  makesSick: 0
+  medicineSuccessChance: 1

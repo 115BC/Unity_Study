@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: weapona
+  m_EditorClassIdentifier: 
+  key: weapona
+  displayName: "\u6B66\u5668a"
+  description: "\u6708\u4EAE\u4EAE\u5F97\u4E0D\u6B63\u5E38,\u5149\u76F4\u76F4\u5730\u7167\u8FDB\u5E87\u62A4\u6240,\u8EBA\u4E0B\u5C31\u5934\u75BC\u3002(\u6807\u9898\u5C31\u662F\u8FD9\u4E09\u4E2A\u5B57\u7B26,\u4E0D\u89E3\u91CA)"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 6
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 4053e38a002b8cb4ba824f1ba4aef385, type: 2}
+  - {fileID: 11400000, guid: 71425e257ec8d8f43adb34f901336493, type: 2}

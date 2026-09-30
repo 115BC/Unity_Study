@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: ghostship
+  m_EditorClassIdentifier: 
+  key: ghostship
+  displayName: "\u5E7D\u7075\u8239"
+  description: "\u6574\u6761\u6D77\u5E73\u7EBF\u6697\u4E0B\u53BB\u3002\u4E00\u8258\u6CA1\u6709\u706F\u3001\u4E5F\u6CA1\u6709\u4EBA\u7684\u8239\u9760\u4E0A\u7901\u77F3,\u7532\u677F\u4E0A\u6446\u7740\u6574\u9F50\u7684\u7F06\u7EF3\u3002"
+  inEventBag: 0
+  nightlyIndependentRoll: 0.2
+  priority: 0
+  minNight: 0
+  oncePerRun: 1
+  neverInBag: 1
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 75dfa9233ebd98747896b2f67a7a0260, type: 2}
+  - {fileID: 11400000, guid: 4e8a90834bc6a024094f3e506b452712, type: 2}
+  - {fileID: 11400000, guid: 21a560b27699fee4ea12b14520561cf0, type: 2}

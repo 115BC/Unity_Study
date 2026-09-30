@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a5def9e5894b4ca598b61204f14d95, type: 3}
+  m_Name: monkeynaughty_grab
+  m_EditorClassIdentifier: 
+  key: grab
+  label: "\u7A7A\u624B\u62A2\u593A"
+  resultHint: "-1 \u751F\u547D,\u800C\u4E14\u62A2\u56DE\u6765\u7684\u662F\u7834\u635F\u72B6\u6001(\u70B9\u90A3\u53EA\u7334\u5B50\u624D\u505A\u5F97\u5230)"
+  requiresItem: {fileID: 0}
+  requiresFire: 0
+  requiresStructure: 
+  requiresTeammate: 0
+  requiresNoTeammate: 0
+  costStamina: 0
+  nextDayStaminaPenalty: 0
+  breakChanceNight: 0
+  consumesItem: 0
+  drainsFlashlight: 0
+  recoversDamaged: 1
+  rewardFood: 0
+  applySick: 0
+  alwaysAvailable: 0

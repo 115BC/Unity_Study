@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: gull
+  m_EditorClassIdentifier: 
+  key: gull
+  displayName: "\u6D77\u9E25"
+  description: "\u4E00\u53EA\u6D77\u9E25\u843D\u5728\u5E87\u62A4\u6240\u9876\u4E0A,\u6B6A\u7740\u5934\u770B\u4F60\u5403\u4E1C\u897F\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 6
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: e53297cef41290846b5ca92680c87571, type: 2}
+  - {fileID: 11400000, guid: b7cce66e911987748931330e663c1b5a, type: 2}

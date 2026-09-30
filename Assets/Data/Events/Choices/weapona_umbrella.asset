@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a5def9e5894b4ca598b61204f14d95, type: 3}
+  m_Name: weapona_umbrella
+  m_EditorClassIdentifier: 
+  key: umbrella
+  label: "\u7528\u96E8\u4F1E\u906E\u6321"
+  resultHint: "\u5168\u6E38\u620F\u552F\u4E00\u89E3:\u6BEF\u5B50\u4E0D\u80FD\u906E\u3002\u672C\u6B21\u5FC5\u635F"
+  requiresItem: {fileID: 11400000, guid: 023520ae07176e24c8c235ec7b78ed83, type: 2}
+  requiresFire: 0
+  requiresStructure: 
+  requiresTeammate: 0
+  requiresNoTeammate: 0
+  costStamina: 0
+  nextDayStaminaPenalty: 0
+  breakChanceNight: 1
+  consumesItem: 0
+  drainsFlashlight: 0
+  recoversDamaged: 0
+  rewardFood: 0
+  applySick: 0
+  alwaysAvailable: 0

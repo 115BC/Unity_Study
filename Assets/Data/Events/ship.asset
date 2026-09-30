@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: ship
+  m_EditorClassIdentifier: 
+  key: ship
+  displayName: "\u8DEF\u8FC7\u7684\u8F6E\u8239"
+  description: "\u6D77\u5E73\u7EBF\u4E0A\u6709\u706F\u5149\u3002\u7531\u6F02\u6D41\u74F6\u5F15\u6765:\u5355\u53D1\u5373\u7ED3\u5C40A\u3002"
+  inEventBag: 0
+  nightlyIndependentRoll: 0.2
+  priority: 0
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 1
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: d87bc4795cb83434b8953172b9859bc9, type: 2}
+  - {fileID: 11400000, guid: 996979b7f3161884093579a6cc86ad12, type: 2}
+  - {fileID: 11400000, guid: 0a0960ce2e0f96c4880c8da6d243f9d9, type: 2}
+  - {fileID: 11400000, guid: c81ce8548eea95a4aa9a5d2be0845039, type: 2}

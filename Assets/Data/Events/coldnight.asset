@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: coldnight
+  m_EditorClassIdentifier: 
+  key: coldnight
+  displayName: "\u4F4E\u6E29\u591C"
+  description: "\u6C14\u6E29\u6389\u5F97\u5F88\u5FEB,\u5E87\u62A4\u6240\u91CC\u5F00\u59CB\u7ED3\u971C\u3002"
+  inEventBag: 1
+  nightlyIndependentRoll: 0
+  priority: 9
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 0
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: ac607fbf7354fa343881e9ff399f9971, type: 2}
+  - {fileID: 11400000, guid: 294661be6ffd76446b64fbfc1396d315, type: 2}
+  - {fileID: 11400000, guid: ec9d6a3875c5c364798c4962a87d5b01, type: 2}

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: shadow
+  m_EditorClassIdentifier: 
+  key: shadow
+  displayName: "\u5F71\u602A"
+  description: "\u5E87\u62A4\u6240\u5916\u51FA\u73B0\u9ED1\u5F71,\u773C\u775B\u53D1\u5149,\u9010\u6E10\u903C\u8FD1\u3002\u6574\u5C40\u6700\u91CD\u7684\u4E00\u573A\u6F14\u51FA(\u7B2C
+    20~25 \u5929\u5FC5\u51FA 1 \u6B21)\u3002"
+  inEventBag: 0
+  nightlyIndependentRoll: 0
+  priority: 0
+  minNight: 0
+  oncePerRun: 1
+  neverInBag: 1
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: 2773c3412e06fe546b18af37f5911a81, type: 2}
+  - {fileID: 11400000, guid: a1bddbd5c813b4443ab91736d588e8ad, type: 2}
+  - {fileID: 11400000, guid: ef435e1ade997d64c9d6d0ae32616dac, type: 2}
+  - {fileID: 11400000, guid: 64813c5d609271f4e8f8577950a5cb43, type: 2}
+  - {fileID: 11400000, guid: cbf70e2814111954da9ae92e6018a9e5, type: 2}
+  - {fileID: 11400000, guid: f8d2951b419a43e4aade4c5fcae8b0a9, type: 2}

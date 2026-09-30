@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97938154da684443856ff722e2e1733b, type: 3}
+  m_Name: twonames_matelost
+  m_EditorClassIdentifier: 
+  item: {fileID: 11400000, guid: 2cf838695f52fb2dd184ee1a2a01cb63, type: 2}
+  source: matelost
+  chance: 0.01
+  loreText: "\u4E00\u5F20\u7B7E\u5230\u8868,\u4E24\u4E2A\u540D\u5B57\u88AB\u5212\u6389\u4E86\u3002\u5212\u7684\u4EBA\u7B14\u8FF9\u5F88\u7A33\u3002"

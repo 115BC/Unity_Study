@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a90ae30ef740ef9b3debcb6ec857b2, type: 3}
+  m_Name: dive
+  m_EditorClassIdentifier: 
+  key: dive
+  displayName: "\u6F5C\u6C34"
+  cost: 3
+  costAllRemaining: 0
+  oncePerDay: 0
+  requiresDailyRoll: 0
+  requiresAnyOf: []
+  requiresStructure: 
+  location: "\u6D45\u6EE9"
+  desc: "\u7F50\u5934 60%\xD76 + \u9C7C\u9975 40%\xD73;\u7528\u9C7C\u53C9\u6216\u7B80\u6613\u6D6E\u955C\u65F6\u6982\u7387\u51CF\u534A\u300215%
+    \u6389\u5B9D\u85CF\u94A5\u5319(\u4E0D\u9700\u8981\u56FE)\u3002\u5C0F\u6982\u7387\u53D7\u4F24\u3002"

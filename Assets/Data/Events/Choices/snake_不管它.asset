@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a5def9e5894b4ca598b61204f14d95, type: 3}
+  m_Name: "snake_\u4E0D\u7BA1\u5B83"
+  m_EditorClassIdentifier: 
+  key: "\u4E0D\u7BA1\u5B83"
+  label: "\u4E0D\u7BA1\u5B83"
+  resultHint: "-1 \u751F\u547D \u6216 \u635F\u5931 1 \u4EFD\u7F50\u5934"
+  requiresItem: {fileID: 0}
+  requiresFire: 0
+  requiresStructure: 
+  requiresTeammate: 0
+  requiresNoTeammate: 0
+  costStamina: 0
+  nextDayStaminaPenalty: 0
+  breakChanceNight: 0
+  consumesItem: 0
+  drainsFlashlight: 0
+  recoversDamaged: 0
+  rewardFood: 0
+  applySick: 0
+  alwaysAvailable: 1

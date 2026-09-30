@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a5def9e5894b4ca598b61204f14d95, type: 3}
+  m_Name: ship_flashlight
+  m_EditorClassIdentifier: 
+  key: flashlight
+  label: "\u624B\u7535\u7B52\u7167\u5C04"
+  resultHint: "50% \u2192 \u7ED3\u5C40A;\u843D\u7A7A = \u9519\u8FC7,\u8FD9\u6761\u8239\u6C38\u4E45\u4E0D\u518D\u6765"
+  requiresItem: {fileID: 0}
+  requiresFire: 0
+  requiresStructure: 
+  requiresTeammate: 0
+  requiresNoTeammate: 0
+  costStamina: 0
+  nextDayStaminaPenalty: 0
+  breakChanceNight: 0
+  consumesItem: 0
+  drainsFlashlight: 1
+  recoversDamaged: 0
+  rewardFood: 0
+  applySick: 0
+  alwaysAvailable: 0

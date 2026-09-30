@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a90ae30ef740ef9b3debcb6ec857b2, type: 3}
+  m_Name: repair
+  m_EditorClassIdentifier: 
+  key: repair
+  displayName: "\u4FEE\u7406"
+  cost: 0
+  costAllRemaining: 0
+  oncePerDay: 0
+  requiresDailyRoll: 0
+  requiresAnyOf: []
+  requiresStructure: 
+  location: "\u8425\u5730"
+  desc: "\u6253\u706B\u77F3 0\u6750\u6599+1\u4F53\u529B / \u6BEF\u5B50 1+1 / \u9C7C\u53C9
+    2+2 / \u6F5C\u6C34\u88C5\u7F6E 4+3 / \u6709\u914D\u65B9\u7684 = \u5236\u9020\u91CF\u7684\u4E00\u534A\u3002\u673A\u68B0\u5E08\u5F53\u5929:\u4F53\u529B
+    0 \u4E14\u6750\u6599 -1\u3002"

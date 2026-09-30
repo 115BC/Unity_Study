@@ -1,0 +1,160 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1cc036e2aa227c142bedfac67ffa1e21, type: 3}
+  m_Name: Database
+  m_EditorClassIdentifier: 
+  bal: {fileID: 11400000, guid: 4b74a967cf6273f4bb68ba76643848f8, type: 2}
+  Can: {fileID: 11400000, guid: e836ab0b5cdf83b4fa1475a56b07e90d, type: 2}
+  Coconut: {fileID: 11400000, guid: d61c2163a85861d44ba0238ce78eae03, type: 2}
+  Chocolate: {fileID: 11400000, guid: 7c88dd476921b094083a28293f37c631, type: 2}
+  Bait: {fileID: 11400000, guid: 37c3e7dcb90e6fa4aa76e354cf72bec6, type: 2}
+  MedKit: {fileID: 11400000, guid: 0c19b474c1b4ced428e5ff2eaaff60b9, type: 2}
+  Flare: {fileID: 11400000, guid: 5ec301d9462ffbd488c8449b653eafda, type: 2}
+  FlareGun: {fileID: 11400000, guid: fa6a31cdc3a04e2a9e217bf4f34f4781, type: 2}
+  Material: {fileID: 11400000, guid: 1a9d1983fd25a01498d2c59ef67e8a31, type: 2}
+  FishingRod: {fileID: 11400000, guid: 87e2d00c9c405f147977499fa56c0d58, type: 2}
+  DiveGear: {fileID: 11400000, guid: 4b0fdbc49cbfee343850ce9da96b9a99, type: 2}
+  SimpleMask: {fileID: 11400000, guid: 4e764e462921ee94385a9d7abd996e26, type: 2}
+  Spear: {fileID: 11400000, guid: 1b9e15a833aa5d54a8679797859b5469, type: 2}
+  Flint: {fileID: 11400000, guid: e8e50c3f5429d1a49a02681090fa1216, type: 2}
+  Blanket: {fileID: 11400000, guid: efa0425a7aeb94242b21976f4e6516c6, type: 2}
+  Umbrella: {fileID: 11400000, guid: 023520ae07176e24c8c235ec7b78ed83, type: 2}
+  Net: {fileID: 11400000, guid: b58e496d073127e42b8756e94d7d3b18, type: 2}
+  Flashlight: {fileID: 11400000, guid: efcaf0c099a8b024bac5c243557d92f1, type: 2}
+  Medicine: {fileID: 11400000, guid: 95f4faef07c494e4daf23595beb173fb, type: 2}
+  CrudeFlare: {fileID: 11400000, guid: 0afe932b3968afb4bb1cde4d6be58a46, type: 2}
+  Bottle: {fileID: 11400000, guid: 643bc642a807750448c7386517de5770, type: 2}
+  Herb: {fileID: 11400000, guid: 7a326bc5a0c44e81a2e8011bf71f4037, type: 2}
+  CrudeFlint: {fileID: 11400000, guid: 412cbf2a90034dca938fe99c82029d47, type: 2}
+  NameTag: {fileID: 11400000, guid: 59a84ff2756b80d41a755417c75ce818, type: 2}
+  Map: {fileID: 11400000, guid: 6e27ce5ff303a934a8758c3f60a7fe8c, type: 2}
+  Key: {fileID: 11400000, guid: 6e39799cb57226c4e93dec7c0975e359, type: 2}
+  Chest: {fileID: 11400000, guid: 650cf92639934724ab2eabdb76c7d211, type: 2}
+  Scrap: {fileID: 11400000, guid: 5e126e3a664cc0d4fa7504f607c8f31d, type: 2}
+  Newspaper: {fileID: 11400000, guid: b68d39efae669e346ae6bf149c13d529, type: 2}
+  Photo: {fileID: 11400000, guid: 43bb717b252d86c4c8bbdb8ce99c4658, type: 2}
+  Luggage: {fileID: 11400000, guid: 29c99380a61efeae267791169a638b17, type: 2}
+  Claim: {fileID: 11400000, guid: 3b03c039e8f4218c337f93672efefc0d, type: 2}
+  Badge: {fileID: 11400000, guid: 7b46399c7d0827129d9af61cf1a3bc84, type: 2}
+  Boarding: {fileID: 11400000, guid: 060cfca3397a98d2775e83669824186b, type: 2}
+  Tally: {fileID: 11400000, guid: 11c65cd96feba0be85d8de536d733b1a, type: 2}
+  Raft: {fileID: 11400000, guid: 45c4af3e6f7279962a309e30f6874275, type: 2}
+  TwoNames: {fileID: 11400000, guid: 2cf838695f52fb2dd184ee1a2a01cb63, type: 2}
+  MonkeyGift: {fileID: 11400000, guid: 5a0a3a641f08278f538e8c0a24e6c88b, type: 2}
+  scavengedItems:
+  - {fileID: 11400000, guid: e836ab0b5cdf83b4fa1475a56b07e90d, type: 2}
+  - {fileID: 11400000, guid: 1a9d1983fd25a01498d2c59ef67e8a31, type: 2}
+  - {fileID: 11400000, guid: d61c2163a85861d44ba0238ce78eae03, type: 2}
+  - {fileID: 11400000, guid: 7c88dd476921b094083a28293f37c631, type: 2}
+  - {fileID: 11400000, guid: 37c3e7dcb90e6fa4aa76e354cf72bec6, type: 2}
+  - {fileID: 11400000, guid: 5ec301d9462ffbd488c8449b653eafda, type: 2}
+  - {fileID: 11400000, guid: fa6a31cdc3a04e2a9e217bf4f34f4781, type: 2}
+  - {fileID: 11400000, guid: 0c19b474c1b4ced428e5ff2eaaff60b9, type: 2}
+  - {fileID: 11400000, guid: 87e2d00c9c405f147977499fa56c0d58, type: 2}
+  - {fileID: 11400000, guid: 4b0fdbc49cbfee343850ce9da96b9a99, type: 2}
+  - {fileID: 11400000, guid: 1b9e15a833aa5d54a8679797859b5469, type: 2}
+  - {fileID: 11400000, guid: e8e50c3f5429d1a49a02681090fa1216, type: 2}
+  - {fileID: 11400000, guid: efa0425a7aeb94242b21976f4e6516c6, type: 2}
+  - {fileID: 11400000, guid: 023520ae07176e24c8c235ec7b78ed83, type: 2}
+  - {fileID: 11400000, guid: b58e496d073127e42b8756e94d7d3b18, type: 2}
+  - {fileID: 11400000, guid: efcaf0c099a8b024bac5c243557d92f1, type: 2}
+  - {fileID: 11400000, guid: 643bc642a807750448c7386517de5770, type: 2}
+  recipes:
+  - {fileID: 11400000, guid: 5b4a367234d442d4bb5897bd6a343f44, type: 2}
+  - {fileID: 11400000, guid: b45693ec627f4fb29b530f473cc2f881, type: 2}
+  - {fileID: 11400000, guid: 3d10c20569397b148a2f80a753bf6a35, type: 2}
+  - {fileID: 11400000, guid: 0819d0f2b7ecdeb44aa486ad41e03e10, type: 2}
+  - {fileID: 11400000, guid: 6debe4dec23e42deb6c1065991074d52, type: 2}
+  - {fileID: 11400000, guid: 8e73f92aa3569314293d0f8c1a8612fd, type: 2}
+  - {fileID: 11400000, guid: 8137db58c4c190c418e09637a86ae5ab, type: 2}
+  - {fileID: 11400000, guid: a72dbb629a3dcef43b4954265dae482a, type: 2}
+  - {fileID: 11400000, guid: dfb9d886391b37648a377e72ad04342f, type: 2}
+  - {fileID: 11400000, guid: c8a55f03282bef74b84fe63f2292486c, type: 2}
+  - {fileID: 11400000, guid: ac460f43e6d67974dab33cb9300003a2, type: 2}
+  activities:
+  - {fileID: 11400000, guid: 3cad5a77098cf9a418211d26ab013185, type: 2}
+  - {fileID: 11400000, guid: e647ed79a9f43fd41abdac9c81dfcaab, type: 2}
+  - {fileID: 11400000, guid: 799e26686aae9334b8be9f2409eb8139, type: 2}
+  - {fileID: 11400000, guid: c1ba39b0d3cf12b4e98b98523fee46be, type: 2}
+  - {fileID: 11400000, guid: c583f4afcae85d84db3d452670c7d9c7, type: 2}
+  - {fileID: 11400000, guid: 7bf1c02c06539a14abbe42ac9ba5504f, type: 2}
+  - {fileID: 11400000, guid: 9f152fa1e7be9c44cad5841f496f1495, type: 2}
+  - {fileID: 11400000, guid: 52f6af352f8d4be40a9c653e22c297d7, type: 2}
+  - {fileID: 11400000, guid: c5bb77eedda15194994d5270526b9f86, type: 2}
+  - {fileID: 11400000, guid: 03601717aa182d043a1478b37925cb92, type: 2}
+  - {fileID: 11400000, guid: f72273caca3ef4446aff70b21418e940, type: 2}
+  - {fileID: 11400000, guid: 6c7c78709e7acfe4cb3449f74e86b999, type: 2}
+  - {fileID: 11400000, guid: 85061c3f2dc080347b184c805f18fc71, type: 2}
+  teammates:
+  - {fileID: 11400000, guid: 2f07d5c7f4675f741b68ea628905f978, type: 2}
+  - {fileID: 11400000, guid: 3972c179f17ee31409c0e5e35dddf573, type: 2}
+  - {fileID: 11400000, guid: a39f5ab2e6c3c9f4b93c9afc23c76a71, type: 2}
+  endingTable:
+  - {fileID: 11400000, guid: a6a5c8499399ca845bc4f8d34063a3c5, type: 2}
+  - {fileID: 11400000, guid: 4176b78c5c69b284ea00518971e6aed2, type: 2}
+  - {fileID: 11400000, guid: bb1ac55b8340851478394c0ca76a0d0f, type: 2}
+  - {fileID: 11400000, guid: 5195434a73b51594fafe139267e1edbb, type: 2}
+  - {fileID: 11400000, guid: 3d08f2fa0a0b8014784df3a05235f54e, type: 2}
+  - {fileID: 11400000, guid: 3ea724b7bbc3d39499b5a6caaee5d068, type: 2}
+  - {fileID: 11400000, guid: b098b5a940887df4da3edec07d809834, type: 2}
+  loreDrops:
+  - {fileID: 11400000, guid: b904e68e636816241bfa363c85bcbf4e, type: 2}
+  - {fileID: 11400000, guid: 01d46c786158ae949a70d6de727fd6f2, type: 2}
+  - {fileID: 11400000, guid: 2517513ffddf3be42862f81616fec95e, type: 2}
+  - {fileID: 11400000, guid: 0db70330e494be740a0e94d020d78626, type: 2}
+  - {fileID: 11400000, guid: 6bd9b86767f6456c05fe07864dc90d25, type: 2}
+  - {fileID: 11400000, guid: 75146d3317c509bc398cc7fa8df4bbce, type: 2}
+  - {fileID: 11400000, guid: c5591b45b9656d7d5116119f86d3754a, type: 2}
+  - {fileID: 11400000, guid: eafcdb29724e0956b47a79594bc87319, type: 2}
+  - {fileID: 11400000, guid: 2bd25acc0a4a43258595a520c965e2e7, type: 2}
+  - {fileID: 11400000, guid: ab11828e46ff76dafa4547c55b1459fe, type: 2}
+  - {fileID: 11400000, guid: 060ce7a69c933e0d1377477d64597875, type: 2}
+  - {fileID: 11400000, guid: 5065e2a1859bd12ef53c3ef658210468, type: 2}
+  Pilot: {fileID: 11400000, guid: 2f07d5c7f4675f741b68ea628905f978, type: 2}
+  Navigator: {fileID: 11400000, guid: 3972c179f17ee31409c0e5e35dddf573, type: 2}
+  Mechanic: {fileID: 11400000, guid: a39f5ab2e6c3c9f4b93c9afc23c76a71, type: 2}
+  bagEvents:
+  - {fileID: 11400000, guid: 0d49bdb3bb4cc143f379fddbaea28d78, type: 2}
+  - {fileID: 11400000, guid: 9999d22aeb5f5c14895d2d3a7f69bc3a, type: 2}
+  - {fileID: 11400000, guid: 5bdef3703ede18342ac253e736fb348e, type: 2}
+  - {fileID: 11400000, guid: 85d8ab2c6dcdf7d498743072ad5b2a8f, type: 2}
+  - {fileID: 11400000, guid: 28b3f8eb44f395844a97e245959b88a5, type: 2}
+  - {fileID: 11400000, guid: 1be3614a5aa29f7458e6bdd84f1d6a00, type: 2}
+  - {fileID: 11400000, guid: 22e89132dba57e94491efaef66153e18, type: 2}
+  - {fileID: 11400000, guid: 03293ff0ff5278d47997979d034f6095, type: 2}
+  - {fileID: 11400000, guid: b94e8de8e2b883445acc773595dd5891, type: 2}
+  - {fileID: 11400000, guid: 10ec150431d620b4a9442088d41792bf, type: 2}
+  - {fileID: 11400000, guid: 1e69a055382a9b54a9e56bbe866c411e, type: 2}
+  - {fileID: 11400000, guid: 2f7ab69c34793d947afa93fba7983068, type: 2}
+  - {fileID: 11400000, guid: 699ae082b65302b44a930e9aed8710c5, type: 2}
+  - {fileID: 11400000, guid: 7ee47e8ee9c78ea46b201182ec0117ef, type: 2}
+  - {fileID: 11400000, guid: 62b41dadd1ce15246a808935fea0891f, type: 2}
+  Ship: {fileID: 11400000, guid: 07c101fca72c04641bec67fe5fc12955, type: 2}
+  Ghost: {fileID: 11400000, guid: 731bee2e9c2acef45a8a53089c2f578c, type: 2}
+  Bones: {fileID: 11400000, guid: 410c33f17b904513b46746e699e42982, type: 2}
+  PalmTree: {fileID: 11400000, guid: 0d49bdb3bb4cc143f379fddbaea28d78, type: 2}
+  Shadow: {fileID: 11400000, guid: b09cad8b7a659844faba1c4cbdc147df, type: 2}
+  TwoLights: {fileID: 11400000, guid: f0138d764477f8c4394a34d88ec82ea4, type: 2}
+  Tide: {fileID: 11400000, guid: 9999d22aeb5f5c14895d2d3a7f69bc3a, type: 2}
+  BloodMoon: {fileID: 11400000, guid: 5bdef3703ede18342ac253e736fb348e, type: 2}
+  SearchPlane: {fileID: 11400000, guid: 85d8ab2c6dcdf7d498743072ad5b2a8f, type: 2}
+  ColdNight: {fileID: 11400000, guid: 28b3f8eb44f395844a97e245959b88a5, type: 2}
+  Snake: {fileID: 11400000, guid: 1be3614a5aa29f7458e6bdd84f1d6a00, type: 2}
+  FishSchool: {fileID: 11400000, guid: 22e89132dba57e94491efaef66153e18, type: 2}
+  Driftbottle: {fileID: 11400000, guid: 03293ff0ff5278d47997979d034f6095, type: 2}
+  Gull: {fileID: 11400000, guid: b94e8de8e2b883445acc773595dd5891, type: 2}
+  SmallShadow: {fileID: 11400000, guid: 10ec150431d620b4a9442088d41792bf, type: 2}
+  MonkeyNaughty: {fileID: 11400000, guid: 1e69a055382a9b54a9e56bbe866c411e, type: 2}
+  MonkeyFriendly: {fileID: 11400000, guid: 2f7ab69c34793d947afa93fba7983068, type: 2}
+  Rain: {fileID: 11400000, guid: 699ae082b65302b44a930e9aed8710c5, type: 2}
+  WeaponA: {fileID: 11400000, guid: 7ee47e8ee9c78ea46b201182ec0117ef, type: 2}
+  FakeMate: {fileID: 11400000, guid: 62b41dadd1ce15246a808935fea0891f, type: 2}

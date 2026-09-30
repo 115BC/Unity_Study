@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a5def9e5894b4ca598b61204f14d95, type: 3}
+  m_Name: searchplane_firepile
+  m_EditorClassIdentifier: 
+  key: firepile
+  label: "\u70B9\u4EAE\u4FE1\u53F7\u706B\u5806"
+  resultHint: "\u53EA\u5728 \u4FE1\u53F7\u706B\u5806 \u706D\u7740\u7684\u90A3\u4E00\u665A\u7ED9:\u5F53\u573A\u70B9\u7740\u5B83(\u82B1\u706B\u79CD)+ \u8BB0\u4E0B\u7B2C\u4E00\u53D1\u3002\u70E7\u7740\u7684\u4E24\u665A\u5B83\u81EA\u5DF1\u5C31\u514D\u68C0"
+  requiresItem: {fileID: 0}
+  requiresFire: 0
+  requiresStructure: signalfire
+  requiresTeammate: 0
+  requiresNoTeammate: 0
+  costStamina: 0
+  nextDayStaminaPenalty: 0
+  breakChanceNight: 0
+  consumesItem: 0
+  drainsFlashlight: 0
+  recoversDamaged: 0
+  rewardFood: 0
+  applySick: 0
+  alwaysAvailable: 0

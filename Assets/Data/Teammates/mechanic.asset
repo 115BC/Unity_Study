@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 433ded80c801403cbf15776dbc3ee51a, type: 3}
+  m_Name: mechanic
+  m_EditorClassIdentifier: 
+  key: mechanic
+  displayName: "\u673A\u68B0\u5E08"
+  profession: "\u673A\u68B0\u5E08"
+  skillChance: 0.4
+  skillDesc: "\u7701\u7A0E\u578B:\u5F53\u5929\u6240\u6709\u4FEE\u7406\u4F53\u529B\u5F52\u96F6\u4E14\u6BCF\u4EF6\u6750\u6599
+    -1(\u6700\u4F4E 0)\u3002\u8865\u5F55\u2466 \u4E4B\u540E\u4ED6\u662F\u4E09\u5BB6\u91CC\u88AB\u52A0\u5F3A\u6700\u591A\u7684\u4E00\u4E2A\u3002"
+  color: {r: 1, g: 0.75, b: 0.35, a: 1}

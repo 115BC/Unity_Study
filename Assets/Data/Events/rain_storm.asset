@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b410257a2494ebfe0626ecf80e58c, type: 3}
+  m_Name: rain_storm
+  m_EditorClassIdentifier: 
+  key: rain_storm
+  displayName: "\u96F7\u96E8"
+  description: "\u4E00\u6B21\u767D\u95EA,\u5EF6\u8FDF\u7684\u96F7\u58F0\u3002"
+  inEventBag: 0
+  nightlyIndependentRoll: 0
+  priority: 0
+  minNight: 0
+  oncePerRun: 0
+  neverInBag: 1
+  variants: []
+  variantWeights: 
+  choices:
+  - {fileID: 11400000, guid: b7e0f41e71b2abd43b6a3083c476257e, type: 2}
+  - {fileID: 11400000, guid: 9eed34e38f4658e419248a7cf31d9eb8, type: 2}
