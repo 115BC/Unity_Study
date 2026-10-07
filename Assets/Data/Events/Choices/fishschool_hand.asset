@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: hand
   label: "\u7528\u9C7C\u53C9\u4E0B\u6C34\u53C9\u9C7C"
-  resultHint: "3 \u4EFD\u7F50\u5934;\u9C7C\u53C9\u7167\u5E38\u63B7\u7D2F\u79EF\u6982\u7387(20% \u8D77)\u2014\u2014 \u4F1A\u574F"
+  resultHint: "3 \u4EFD\u7F50\u5934;\u9C7C\u53C9\u7167\u5E38\u4F1A\u574F \u2014\u2014
+    \u7528\u5F97\u8D8A\u591A\u8D8A\u5BB9\u6613\u574F"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

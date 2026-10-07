@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: boarding
   displayName: "\u6E7F\u900F\u7684\u767B\u673A\u724C"
-  desc: "\u63A2\u7D22\u8352\u5C9B\u6742\u7269(1%\u3001\u6574\u5C40\u4E00\u6B21)\u3002\u65E5\u671F\u5C31\u662F\u8D77\u98DE\u90A3\u5929,\u5EA7\u4F4D\u53F7\u5BF9\u5E94\u7740\u4F60\u8EAB\u8FB9\u90A3\u628A\u7A7A\u540A\u5E8A\u3002"
+  desc: "\u63A2\u7D22\u8352\u5C9B\u7684\u6742\u7269(\u6574\u5C40\u6700\u591A\u4E00\u6B21)\u3002\u65E5\u671F\u5C31\u662F\u8D77\u98DE\u90A3\u5929,\u5EA7\u4F4D\u53F7\u5BF9\u5E94\u7740\u4F60\u8EAB\u8FB9\u90A3\u628A\u7A7A\u540A\u5E8A\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -25,9 +25,7 @@ MonoBehaviour:
   lore: 1
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1

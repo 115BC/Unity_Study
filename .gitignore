@@ -32,3 +32,6 @@
 Thumbs.db
 *.tmp
 *.unitypackage
+
+# 美术原始下载包(只在本地留档,不进版本库)
+/_packs/

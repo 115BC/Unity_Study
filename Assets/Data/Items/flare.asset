@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: flare
   displayName: "\u4FE1\u53F7\u5F39"
-  desc: "v0.19:\u5B83\u73B0\u5728\u662F \u4FE1\u53F7\u67AA \u7684\u5F39\u836F,\u5F00\u5C40\u4E0D\u518D\u6563\u5237(\u67AA\u81EA\u5E26 1 \u53D1)\u3002\u6BCF\u53D1\u53EA\u80FD\u7528\u4E00\u6B21;\u641C\u5BFB\u98DE\u673A\u7EBF\u8981\u4E24\u53D1\u3002"
+  desc: "v0.19:\u5B83\u73B0\u5728\u662F \u4FE1\u53F7\u67AA \u7684\u5F39\u836F,\u5F00\u5C40\u4E0D\u518D\u6563\u5237(\u67AA\u81EA\u5E26
+    1 \u53D1)\u3002\u6BCF\u53D1\u53EA\u80FD\u7528\u4E00\u6B21;\u641C\u5BFB\u98DE\u673A\u7EBF\u8981\u4E24\u53D1\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -25,10 +26,7 @@ MonoBehaviour:
   lore: 0
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0

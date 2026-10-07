@@ -21,4 +21,5 @@ MonoBehaviour:
   requiresAnyOf: []
   requiresStructure: 
   location: "\u8425\u5730"
-  desc: "\u533B\u7597\u7BB1 100% / \u81EA\u5236\u836F\u54C1 70%(\u5931\u8D25\u4E5F\u6D88\u8017)\u3002"
+  desc: "\u533B\u7597\u7BB1 100% / \u81EA\u5236\u836F\u54C1 70%(\u5931\u8D25\u4E5F\u6D88\u8017)\u3002v0.39:0
+    \u7CBE\u529B\u3002"

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: luggage
   displayName: "\u6CE1\u6C34\u7684\u884C\u674E\u724C"
-  desc: "\u9493\u9C7C\u6742\u7269(1%\u3001\u6574\u5C40\u4E00\u6B21)\u3002\u4E00\u4E2A\u4E0D\u8BA4\u8BC6\u7684\u59D3,\u548C\u540C\u4E00\u4E2A\u4FDD\u9669\u516C\u53F8\u7684\u7406\u8D54\u7F16\u53F7\u3002"
+  desc: "\u9493\u9C7C\u635E\u4E0A\u6765\u7684\u6742\u7269(\u6574\u5C40\u6700\u591A\u4E00\u6B21)\u3002\u4E00\u4E2A\u4E0D\u8BA4\u8BC6\u7684\u59D3,\u548C\u540C\u4E00\u4E2A\u4FDD\u9669\u516C\u53F8\u7684\u7406\u8D54\u7F16\u53F7\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -25,9 +25,7 @@ MonoBehaviour:
   lore: 1
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1

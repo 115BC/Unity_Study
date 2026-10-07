@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: monkeyfriendly
   m_EditorClassIdentifier: 
   key: monkeyfriendly
-  displayName: "\u53CB\u5584\u7684\u7334\u5B50"
-  description: "\u4E24\u53EA\u7334\u5B50\u5750\u6210\u4E00\u6392,\u628A\u5B83\u4EEC\u60F3\u6362\u7684\u63A8\u7ED9\u4F60\u3002"
+  displayName: "\u53CB\u5584\u7684\u72D0\u72F8"
+  description: "\u4E24\u53EA\u72D0\u72F8\u5750\u6210\u4E00\u6392,\u628A\u5B83\u4EEC\u60F3\u6362\u7684\u63A8\u7ED9\u4F60\u3002"
   inEventBag: 1
   nightlyIndependentRoll: 0
   priority: 6

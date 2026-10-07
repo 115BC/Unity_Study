@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: refuse
   label: "\u4E0D\u7ED9\u5B83"
-  resultHint: "\u90A3\u4EF6\u7269\u54C1\u88AB\u5B83\u5E26\u8D70,\u6C38\u4E45\u4E22\u5931(= \u4EC0\u4E48\u90FD\u4E0D\u505A / \u5C1D\u8BD5\u7761\u53BB)"
+  resultHint: "\u90A3\u4EF6\u7269\u54C1\u88AB\u5B83\u5E26\u8D70,\u6C38\u4E45\u4E22\u5931(=
+    \u4EC0\u4E48\u90FD\u4E0D\u505A / \u5C1D\u8BD5\u7761\u53BB)"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

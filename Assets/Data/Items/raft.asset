@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: raft
   displayName: "\u65E0\u4EBA\u8BA4\u9886\u7684\u6551\u751F\u7B4F\u6B8B\u7247"
-  desc: "\u4EFB\u4E00\u6DA8\u6F6E\u4E4B\u540E\u7684\u6B21\u65E5\u6E05\u6668\u63B7 1%(\u6574\u5C40\u4E00\u6B21)\u3002\u6709\u4EBA\u8BD5\u8FC7\u79BB\u5F00,\u800C\u4E14\u6CA1\u6709\u8D70\u8FDC\u3002"
+  desc: "\u4EFB\u4E00\u6B21\u6DA8\u6F6E\u4E4B\u540E\u7684\u7B2C\u4E8C\u5929\u6E05\u6668,\u5B83\u53EF\u80FD\u88AB\u51B2\u4E0A\u6765(\u6574\u5C40\u6700\u591A\u4E00\u6B21)\u3002\u6709\u4EBA\u8BD5\u8FC7\u79BB\u5F00,\u800C\u4E14\u6CA1\u6709\u8D70\u8FDC\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -25,9 +25,7 @@ MonoBehaviour:
   lore: 1
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1

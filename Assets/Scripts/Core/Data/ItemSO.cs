@@ -21,7 +21,7 @@ namespace SixtySLike
 
         [Header("性质")]
         public bool consumable;
-        public bool tradeable = true;    // 友善的猴子货单(§3.4)
+        public bool tradeable = true;    // 友善的狐狸货单(§3.4)
         public bool lore;                // 暗线道具:永不进货单、不给数值收益(§5.3)
         public bool indestructible;      // v0.12:钓竿 / 手电筒
 

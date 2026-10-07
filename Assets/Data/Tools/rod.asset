@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: rod
   displayName: "\u9493\u9C7C\u7AFF"
-  desc: "\u89E3\u9501\u9493\u9C7C\u3002v0.12 \u5B9A\u6848:\u6C38\u4E0D\u635F\u574F\u3002v0.21:\u5B83\u4E5F\u80FD\u505A\u4E86(\u6750\u65994 + 2 \u4F53\u529B),\u7B80\u6613\u9493\u94A9 \u5DF2\u6574\u4EF6\u5220\u9664\u3002"
+  desc: "\u89E3\u9501\u9493\u9C7C\u3002v0.12 \u5B9A\u6848:\u6C38\u4E0D\u635F\u574F\u3002v0.21:\u5B83\u4E5F\u80FD\u505A\u4E86(\u6750\u65994
+    + 2 \u4F53\u529B),\u7B80\u6613\u9493\u94A9 \u5DF2\u6574\u4EF6\u5220\u9664\u3002"
   slots: 2
   cabinMin: 1
   cabinMax: 1
@@ -25,13 +26,10 @@ MonoBehaviour:
   lore: 0
   indestructible: 1
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0
   breakChanceStart: 0
   repairMaterials: 0
   repairStamina: 0

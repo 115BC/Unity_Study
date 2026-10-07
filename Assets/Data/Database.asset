@@ -19,8 +19,8 @@ MonoBehaviour:
   Bait: {fileID: 11400000, guid: 37c3e7dcb90e6fa4aa76e354cf72bec6, type: 2}
   MedKit: {fileID: 11400000, guid: 0c19b474c1b4ced428e5ff2eaaff60b9, type: 2}
   Flare: {fileID: 11400000, guid: 5ec301d9462ffbd488c8449b653eafda, type: 2}
-  FlareGun: {fileID: 11400000, guid: fa6a31cdc3a04e2a9e217bf4f34f4781, type: 2}
   Material: {fileID: 11400000, guid: 1a9d1983fd25a01498d2c59ef67e8a31, type: 2}
+  FlareGun: {fileID: 11400000, guid: fa6a31cdc3a04e2a9e217bf4f34f4781, type: 2}
   FishingRod: {fileID: 11400000, guid: 87e2d00c9c405f147977499fa56c0d58, type: 2}
   DiveGear: {fileID: 11400000, guid: 4b0fdbc49cbfee343850ce9da96b9a99, type: 2}
   SimpleMask: {fileID: 11400000, guid: 4e764e462921ee94385a9d7abd996e26, type: 2}
@@ -33,8 +33,8 @@ MonoBehaviour:
   Medicine: {fileID: 11400000, guid: 95f4faef07c494e4daf23595beb173fb, type: 2}
   CrudeFlare: {fileID: 11400000, guid: 0afe932b3968afb4bb1cde4d6be58a46, type: 2}
   Bottle: {fileID: 11400000, guid: 643bc642a807750448c7386517de5770, type: 2}
-  Herb: {fileID: 11400000, guid: 7a326bc5a0c44e81a2e8011bf71f4037, type: 2}
   CrudeFlint: {fileID: 11400000, guid: 412cbf2a90034dca938fe99c82029d47, type: 2}
+  Herb: {fileID: 11400000, guid: 7a326bc5a0c44e81a2e8011bf71f4037, type: 2}
   NameTag: {fileID: 11400000, guid: 59a84ff2756b80d41a755417c75ce818, type: 2}
   Map: {fileID: 11400000, guid: 6e27ce5ff303a934a8758c3f60a7fe8c, type: 2}
   Key: {fileID: 11400000, guid: 6e39799cb57226c4e93dec7c0975e359, type: 2}
@@ -123,7 +123,6 @@ MonoBehaviour:
   Navigator: {fileID: 11400000, guid: 3972c179f17ee31409c0e5e35dddf573, type: 2}
   Mechanic: {fileID: 11400000, guid: a39f5ab2e6c3c9f4b93c9afc23c76a71, type: 2}
   bagEvents:
-  - {fileID: 11400000, guid: 0d49bdb3bb4cc143f379fddbaea28d78, type: 2}
   - {fileID: 11400000, guid: 9999d22aeb5f5c14895d2d3a7f69bc3a, type: 2}
   - {fileID: 11400000, guid: 5bdef3703ede18342ac253e736fb348e, type: 2}
   - {fileID: 11400000, guid: 85d8ab2c6dcdf7d498743072ad5b2a8f, type: 2}
@@ -138,12 +137,13 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 699ae082b65302b44a930e9aed8710c5, type: 2}
   - {fileID: 11400000, guid: 7ee47e8ee9c78ea46b201182ec0117ef, type: 2}
   - {fileID: 11400000, guid: 62b41dadd1ce15246a808935fea0891f, type: 2}
+  - {fileID: 11400000, guid: 0d49bdb3bb4cc143f379fddbaea28d78, type: 2}
   Ship: {fileID: 11400000, guid: 07c101fca72c04641bec67fe5fc12955, type: 2}
   Ghost: {fileID: 11400000, guid: 731bee2e9c2acef45a8a53089c2f578c, type: 2}
-  Bones: {fileID: 11400000, guid: 410c33f17b904513b46746e699e42982, type: 2}
-  PalmTree: {fileID: 11400000, guid: 0d49bdb3bb4cc143f379fddbaea28d78, type: 2}
   Shadow: {fileID: 11400000, guid: b09cad8b7a659844faba1c4cbdc147df, type: 2}
   TwoLights: {fileID: 11400000, guid: f0138d764477f8c4394a34d88ec82ea4, type: 2}
+  Bones: {fileID: 11400000, guid: 410c33f17b904513b46746e699e42982, type: 2}
+  PalmTree: {fileID: 11400000, guid: 0d49bdb3bb4cc143f379fddbaea28d78, type: 2}
   Tide: {fileID: 11400000, guid: 9999d22aeb5f5c14895d2d3a7f69bc3a, type: 2}
   BloodMoon: {fileID: 11400000, guid: 5bdef3703ede18342ac253e736fb348e, type: 2}
   SearchPlane: {fileID: 11400000, guid: 85d8ab2c6dcdf7d498743072ad5b2a8f, type: 2}

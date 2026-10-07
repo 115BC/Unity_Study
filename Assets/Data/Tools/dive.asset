@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: dive
   displayName: "\u6F5C\u6C34\u88C5\u7F6E"
-  desc: "\u5360\u6EE1\u4E00\u6574\u8D9F\u3002\u89E3\u9501\u6F5C\u6C34;\u4FEE\u7406
+  desc: "\u5360\u6EE1\u4E00\u6574\u8D9F(3 \u683C)\u3002\u89E3\u9501\u6F5C\u6C34;\u4FEE\u7406
     = \u6750\u65994 + 3 \u4F53\u529B(\u8865\u5F55\u2466)\u3002"
-  slots: 4
+  slots: 3
   cabinMin: 1
   cabinMax: 1
   spawnPoints: 4
@@ -26,13 +26,10 @@ MonoBehaviour:
   lore: 0
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0
   breakChanceStart: 0.2
   repairMaterials: 4
   repairStamina: 3

@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: fire
   label: "\u70B9\u7740\u706B\u786C\u6491"
-  resultHint: "\u961F\u53CB 70% \u5B58\u6D3B;\u706B\u672C\u6B21\u5FC5\u7184"
+  resultHint: "\u961F\u53CB\u4E0D\u4E00\u5B9A\u6491\u5F97\u4F4F;\u706B\u672C\u6B21\u5FC5\u7184"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 1
   requiresStructure: 
   requiresTeammate: 0

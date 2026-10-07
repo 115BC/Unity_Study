@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: swat
   label: "\u70B9\u51FB\u9A71\u8D76"
-  resultHint: "\u5C0F\u7A97\u53E3:60% \u6210\u529F"
+  resultHint: "\u7A97\u53E3\u5F88\u77ED,\u8D76\u5F97\u4E0A\u624D\u6253\u5F97\u8D70"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

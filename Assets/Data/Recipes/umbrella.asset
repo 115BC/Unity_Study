@@ -19,8 +19,10 @@ MonoBehaviour:
   resultItem: {fileID: 11400000, guid: 023520ae07176e24c8c235ec7b78ed83, type: 2}
   resultStructure: 
   requiresExtraItem: {fileID: 0}
-  requiresExtraItemCount: 0
+  requiresExtraItemCount: 1
+  requiresStructure: 
   supersededBy: {fileID: 0}
+  requiresItemToShow: {fileID: 0}
   oncePerRun: 0
   isStructure: 0
   consumesFlint: 0

@@ -16,6 +16,7 @@ MonoBehaviour:
   label: "\u4EC0\u4E48\u90FD\u4E0D\u505A"
   resultHint: "\u961F\u53CB\u7CBE\u795E\u964D 1 \u5C42"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

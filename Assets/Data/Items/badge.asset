@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: badge
   displayName: "\u538B\u5F2F\u7684\u516C\u53F8\u5FBD\u7AE0"
-  desc: "\u5F71\u602A\u4E4B\u591C\u7684\u6B21\u65E5\u6E05\u6668\u63B7 1%(\u6574\u5C40\u4E00\u6B21;\u90A3\u4E00\u665A\u732E\u5B9D\u76F4\u63A5\u8FDB T \u5C31\u4E0D\u63B7)\u3002\u6B63\u9762\u662F\u6D77\u4E8B\u4FDD\u9669\u516C\u53F8\u7684\u6807\u3002"
+  desc: "\u5F71\u602A\u4E4B\u591C\u7684\u7B2C\u4E8C\u5929\u6E05\u6668,\u5B83\u53EF\u80FD\u88AB\u51B2\u4E0A\u6765(\u6574\u5C40\u6700\u591A\u4E00\u6B21;\u90A3\u4E00\u665A\u5982\u679C\u76F4\u63A5\u732E\u5B9D\u7ED3\u675F\u5C31\u6CA1\u6709\u5B83)\u3002\u6B63\u9762\u662F\u6D77\u4E8B\u4FDD\u9669\u516C\u53F8\u7684\u6807\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -25,9 +25,7 @@ MonoBehaviour:
   lore: 1
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1

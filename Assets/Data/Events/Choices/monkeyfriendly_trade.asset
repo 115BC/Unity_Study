@@ -17,6 +17,7 @@ MonoBehaviour:
   resultHint: "\u7ED9\u5B83 1 \u4EF6\u4F60\u5F53\u524D\u6301\u6709\u7684\u62FE\u8352\u7269,\u6362
     1 \u4EF6\u4F60\u6574\u5C40\u4ECE\u672A\u6301\u6709\u8FC7\u7684"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

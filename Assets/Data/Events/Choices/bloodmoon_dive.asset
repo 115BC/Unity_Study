@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: dive
   label: "\u8D81\u9000\u6F6E\u4E0B\u6C34"
-  resultHint: "\u63B7 60% \u2192 1~3 \u4EFD\u7F50\u5934;\u6210\u529F\u91CC\u518D\u63B7
-    30% \u2192 \u85CF\u5B9D\u56FE\u3002\u4EE3\u4EF7:\u6B21\u65E5\u4F53\u529B\u4E0A\u9650
+  resultHint: "\u6709\u673A\u4F1A\u635E\u56DE 1~3 \u4EFD\u7F50\u5934,\u8FD0\u6C14\u597D\u8FD8\u80FD\u6478\u5230\u85CF\u5B9D\u56FE\u3002\u4EE3\u4EF7:\u6B21\u65E5\u4F53\u529B\u4E0A\u9650
     -1(\u9886\u822A\u5458\u514D)"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

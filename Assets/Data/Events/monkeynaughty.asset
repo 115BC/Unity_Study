@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: monkeynaughty
   m_EditorClassIdentifier: 
   key: monkeynaughty
-  displayName: "\u8C03\u76AE\u7684\u7334\u5B50"
-  description: "\u4E00\u53EA\u7334\u5B50\u4ECE\u6811\u6797\u7A9C\u8FDB\u6765,\u6293\u8D77\u4ED3\u5E93\u91CC\u968F\u673A
+  displayName: "\u8C03\u76AE\u7684\u72D0\u72F8"
+  description: "\u4E00\u53EA\u72D0\u72F8\u4ECE\u6811\u6797\u7A9C\u8FDB\u6765,\u6293\u8D77\u4ED3\u5E93\u91CC\u968F\u673A
     1 \u4EF6\u4E1C\u897F\u5C31\u8DD1\u3002"
   inEventBag: 1
   nightlyIndependentRoll: 0

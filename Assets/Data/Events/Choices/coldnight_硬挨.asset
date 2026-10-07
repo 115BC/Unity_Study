@@ -16,6 +16,7 @@ MonoBehaviour:
   label: "\u786C\u6328\u4E00\u591C"
   resultHint: "-1 \u751F\u547D + \u751F\u75C5"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

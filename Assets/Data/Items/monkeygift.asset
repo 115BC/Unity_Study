@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: monkeygift
   m_EditorClassIdentifier: 
   key: monkeygift
-  displayName: "\u7334\u5B50\u7684\u56DE\u793C"
-  desc: "\u53CB\u5584\u7684\u7334\u5B50\u4EA4\u6613\u6210\u7ACB\u4E4B\u540E\u7684\u6B21\u65E5\u6E05\u6668\u63B7 1%(\u6574\u5C40\u4E00\u6B21)\u3002\u5B83\u62FF\u8D70\u4E00\u6837\u3001\u7559\u4E0B\u4E00\u6837 \u2014\u2014 \u4E0D\u50CF\u4EA4\u6613,\u50CF\u4E0A\u4F9B\u3002"
+  displayName: "\u72D0\u72F8\u7684\u56DE\u793C"
+  desc: "\u53CB\u5584\u7684\u72D0\u72F8\u505A\u6210\u4EA4\u6613\u4E4B\u540E\u7684\u7B2C\u4E8C\u5929\u6E05\u6668,\u5B83\u53EF\u80FD\u88AB\u7559\u4E0B(\u6574\u5C40\u6700\u591A\u4E00\u6B21)\u3002\u5B83\u62FF\u8D70\u4E00\u6837\u3001\u7559\u4E0B\u4E00\u6837
+    \u2014\u2014 \u4E0D\u50CF\u4EA4\u6613,\u50CF\u4E0A\u4F9B\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -25,9 +26,7 @@ MonoBehaviour:
   lore: 1
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1

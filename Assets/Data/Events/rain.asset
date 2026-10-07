@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: rain
   displayName: "\u4E0B\u96E8"
-  description: "\u4E91\u538B\u5F97\u5F88\u4F4E\u3002\u540C\u4E00\u4E8B\u4EF6\u5185\u90E8\u6309
-    3:2:1 \u63B7\u6863\u3002"
+  description: "\u4E91\u538B\u5F97\u5F88\u4F4E\u3002"
   inEventBag: 1
   nightlyIndependentRoll: 0
   priority: 7

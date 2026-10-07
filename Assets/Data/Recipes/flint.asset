@@ -19,10 +19,12 @@ MonoBehaviour:
   resultItem: {fileID: 11400000, guid: 412cbf2a90034dca938fe99c82029d47, type: 2}
   resultStructure: 
   requiresExtraItem: {fileID: 0}
-  requiresExtraItemCount: 0
+  requiresExtraItemCount: 1
   requiresStructure: 
   supersededBy: {fileID: 11400000, guid: e8e50c3f5429d1a49a02681090fa1216, type: 2}
+  requiresItemToShow: {fileID: 0}
   oncePerRun: 0
   isStructure: 0
   consumesFlint: 0
-  desc: "v0.18:\u6750\u65991 \u81EA\u5236\u4E00\u5757\u706B\u79CD,\u53EA\u80FD\u7528\u4E00\u6B21(\u751F\u706B\u65F6\u4F18\u5148\u70E7\u5B83,\u4FDD\u4F4F\u53EF\u53CD\u590D\u7528\u7684 \u6253\u706B\u77F3)\u3002\u624B\u4E0A\u6709 \u6253\u706B\u77F3 \u65F6\u8FD9\u4E00\u884C\u4E0D\u8FDB\u9762\u677F(\u4E0A\u4F4D\u66FF\u4EE3)\u3002"
+  desc: "v0.18:\u6750\u65991 \u81EA\u5236\u4E00\u5757\u706B\u79CD,\u53EA\u80FD\u7528\u4E00\u6B21(\u751F\u706B\u65F6\u4F18\u5148\u70E7\u5B83,\u4FDD\u4F4F\u53EF\u53CD\u590D\u7528\u7684
+    \u6253\u706B\u77F3)\u3002\u624B\u4E0A\u6709 \u6253\u706B\u77F3 \u65F6\u8FD9\u4E00\u884C\u4E0D\u8FDB\u9762\u677F(\u4E0A\u4F4D\u66FF\u4EE3)\u3002"

@@ -26,10 +26,7 @@ MonoBehaviour:
   lore: 0
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 1
   curesSickness: 1
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0

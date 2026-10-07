@@ -27,9 +27,18 @@ namespace SixtySLike
         void OnEnable() { BuildSigns(); }
         void OnDisable() { for (int i = 0; i < built.Count; i++) if (built[i] != null) Destroy(built[i]); built.Clear(); }
 
+        // v0.49(用户:"除了罐头之外都还是很小,并且不要加文字了(大海,篝火...)")
+        //   ⇒ 荒岛那层的**五块地面标牌(天空/大海/沙滩/一些海边植被/篝火)不再印字**。
+        //     几何体与 `seaAnchor / fireAnchor` 这些落点一个没动,只是不写字;道具名仍然在(悬浮才亮,§11-80)。
+        //     `signs` 这份数据与烘焙器写进场景的那一版都留着 —— 想恢复文字,把这个常量改回 true。
+        // ⚠ 是 `static readonly` 而不是 `const`:const false 会让下面那段被编译器判成"永不可达",每次编译刷一条
+        //   CS0162 警告 —— 这个开关是要留着的东西,不能靠删代码来消警告。
+        public static readonly bool GroundSignsVisible = false;
+
         void BuildSigns()
         {
             built.Clear();
+            if (!GroundSignsVisible) return;
             // 与道具名同一条路:World.LabelAt(billboard)。相机是固定的,所以它看起来就是"印在面上",
             // 但不用去猜 LabelFlat 的左右手序 —— 那条我在荒岛这层连着猜错两次。
             // 锚点仍然取标牌自己算出的表面位置,并且用 LowerCenter 托住,免得下半截字埋进沙里。
@@ -68,21 +77,32 @@ namespace SixtySLike
         Color baseColor; bool baseColorCaptured;
 
         void OnMouseUpAsButton() { if (onClick != null) onClick(); }
-        void OnMouseEnter()
+        void OnMouseEnter() { mouseOver = true; ApplyHover(onOver); }
+        void OnMouseExit() { mouseOver = false; ApplyHover(onOut); }
+
+        bool mouseOver;
+
+        // v0.55(用户:"**第一人称情况下不要显示物品文字了**")⇒ 自由视角期间牌子 **一律不亮**。
+        //   ⚠ 这条必须显式挡,不能想当然"反正没人悬浮":锁住的光标停在屏幕正中,转头时 `OnMouseEnter` 会一件接一件触发
+        //   ⇒ 不挡就是"看哪儿弹哪儿一块牌子",正是他要去掉的那种满屏文字。
+        //   ⚠ 牌子不亮 **不等于点不到**:`OnMouseUpAsButton`(看着它按左键)与走近按 E 两条照常工作。
+        //   注:v0.53 我为"走近的目标点亮牌子"加过一条 `walkOver` + `SetWalkTarget`,这条裁定把它整条撤了
+        //   —— 只写不读的东西不留(同"名字输入安全"那批教训:第二份状态早晚会说谎)。
+        void ApplyHover(Action then)
         {
-            if (label != null && !string.IsNullOrEmpty(hoverText)) label.text = hoverText;
-            if (label != null && hoverColor.a > 0f)
+            bool on = mouseOver && !IslandWalk.Active;
+            if (label != null)
             {
-                if (!baseColorCaptured) { baseColor = label.color; baseColorCaptured = true; }
-                label.color = hoverColor;
+                label.gameObject.SetActive(on);
+                if (!string.IsNullOrEmpty(on ? hoverText : baseText)) label.text = on ? hoverText : baseText;
+                if (on && hoverColor.a > 0f)
+                {
+                    if (!baseColorCaptured) { baseColor = label.color; baseColorCaptured = true; }
+                    label.color = hoverColor;
+                }
+                else if (baseColorCaptured) { label.color = baseColor; baseColorCaptured = false; }
             }
-            if (onOver != null) onOver();
-        }
-        void OnMouseExit()
-        {
-            if (label != null && !string.IsNullOrEmpty(baseText)) label.text = baseText;
-            if (label != null && baseColorCaptured) label.color = baseColor;
-            if (onOut != null) onOut();
+            if (then != null) then();
         }
     }
 }

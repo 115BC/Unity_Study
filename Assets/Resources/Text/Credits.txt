@@ -1,0 +1,29 @@
+## 音乐
+所有配乐来自 Incompetech,作者 Kevin MacLeod。许可:**CC BY 4.0** —— 可商用,须署名。
+Music: "Feral Chase", "Division", "Gymnopedie No 3", "Enchanted Valley", "MeasuredPaces", "Ghost Dance"
+by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0
+http://creativecommons.org/licenses/by/4.0/
+
+## 字体
+界面用的中文黑体是 **Noto Sans SC**(思源黑体简体中文)。许可:**SIL Open Font License 1.1** ——
+可免费商用、可嵌入作品;许可证全文随发行包一起提供(`Assets/Art/FONT-OFL-NotoSansSC.txt`)。
+Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+
+## 模型 · KayKit
+角色 / 地牢 / 自然 / 万圣节 / 餐厅 / 家具 / 城市 / 原型 等包,作者 **Kay Lousberg**(kaylousberg.com)。
+许可:**CC0 1.0**(公有领域,不要求署名,这里仍然列出来是因为这些模型构成了你看到的那座岛)。
+
+## 模型 · Quaternius
+生存 / 食物 / 作物 / 动物 / 船 / 怪物 / 武器 / 鱼 / 农场 等包,作者 **Justin(@Quaternius)**。
+我们下载时包内 `License.txt` 写的是 **CC0 1.0**。⚠ 该作者在 2026-08-28 之后改用自定义的 QAL 许可,
+本项目用的是下载时带 CC0 文本的那一批。
+
+## 模型 · 渔网
+作者 **cozee4sure**,来自 Sketchfab:
+https://sketchfab.com/3d-models/fishing-net-cbb4bfc4e5654500a70dfe72ffc0ce0a
+许可:**CC BY 4.0** —— 可商用,须署名:
+"fishing net" by cozee4sure, https://creativecommons.org/licenses/by/4.0/
+
+## 模型 · 小动物与蛇
+`Simplistic Low Poly Nature`(acornbringer)与 `Easy Animated Enemy Pack`。
+包内没有许可文件,按 **CC0** 使用(由素材提供者确认)。

@@ -26,8 +26,6 @@ MonoBehaviour:
   foodPerCanFullness: 0.25
   playerFullnessDecayPerDay: 0.22
   chocolateStamina: 3
-  restStamina: 2
-  restCost: 2
   exploreRefreshBase: 0.3
   exploreRefreshRamp: 0.05
   exploreRefreshCap: 1

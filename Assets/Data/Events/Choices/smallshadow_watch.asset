@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: watch
   label: "\u5B88\u591C"
-  resultHint: "\u961F\u53CB 100% \u5B58\u6D3B;\u6B21\u65E5\u4F53\u529B -2"
+  resultHint: "\u961F\u53CB\u5FC5\u5B9A\u5B58\u6D3B;\u6B21\u65E5\u4F53\u529B -2"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

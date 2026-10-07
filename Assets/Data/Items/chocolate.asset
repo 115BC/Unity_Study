@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: chocolate
   displayName: "\u5DE7\u514B\u529B\u68D2"
-  desc: "\u7279\u6B8A\u98DF\u7269:\u56DE 3 \u70B9\u4F53\u529B,\u4E0D\u586B\u9971\u98DF\u3002v0.19:\u5168\u8231\u53EA\u6709 1 \u6839(\u767D\u5929\u552F\u4E00\u80FD\u52A0\u7CBE\u529B\u7684\u4E1C\u897F,\u6240\u4EE5\u5B83\u662F\u72EC\u4E00\u4EFD\u7684)\u3002"
+  desc: "\u7279\u6B8A\u98DF\u7269:\u56DE 3 \u70B9\u4F53\u529B,\u4E0D\u586B\u9971\u98DF\u3002v0.19:\u5168\u8231\u53EA\u6709
+    1 \u6839(\u767D\u5929\u552F\u4E00\u80FD\u52A0\u7CBE\u529B\u7684\u4E1C\u897F,\u6240\u4EE5\u5B83\u662F\u72EC\u4E00\u4EFD\u7684)\u3002"
   slots: 1
   cabinMin: 1
   cabinMax: 1
@@ -25,10 +26,7 @@ MonoBehaviour:
   lore: 0
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 3
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0

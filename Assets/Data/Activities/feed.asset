@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: feed
   m_EditorClassIdentifier: 
   key: feed
-  displayName: "\u6295\u5582\u961F\u53CB"
+  displayName: "\u5582\u98DF"
   cost: 0
   costAllRemaining: 0
   oncePerDay: 0
@@ -21,4 +21,4 @@ MonoBehaviour:
   requiresAnyOf: []
   requiresStructure: 
   location: "\u8425\u5730"
-  desc: "1 \u4EFD\u7F50\u5934 = 0 \u4F53\u529B\u3001\u6BCF\u5929\u6700\u591A 1 \u6B21\u3001\u76F4\u63A5\u56DE\u5230\u9971\u98DF\u5E76\u91CD\u7F6E\u8BA1\u65F6\u3002"
+  desc: "1 \u4EFD\u7F50\u5934 = 0 \u7CBE\u529B\u3001\u6BCF\u5929\u6700\u591A 1 \u6B21\u3001\u76F4\u63A5\u56DE\u5230\u9971\u98DF\u5E76\u91CD\u7F6E\u8BA1\u65F6\u3002"

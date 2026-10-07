@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: flashlight
   displayName: "\u624B\u6447\u5F0F\u5145\u7535\u624B\u7535\u7B52"
-  desc: "\u6C38\u4E0D\u635F\u574F,\u6539\u4E3A\u7535\u91CF:\u4EFB\u4F55\u591C\u665A\u7528\u6CD5\u7528\u5B8C\u5373\u6CA1\u7535,\u767D\u5929
-    3 \u4F53\u529B\u624B\u6447\u5145\u7535\u3002"
+  desc: "\u6C38\u4E0D\u635F\u574F,\u6539\u4E3A\u7535\u91CF(\u5B58\u50A8 2 \u683C):\u4EFB\u4F55\u591C\u665A\u7528\u6CD5\u7528\u6389
+    1 \u683C,\u767D\u5929 1 \u7CBE\u529B\u5145 1 \u683C;\u5F00\u5C40\u968F\u673A\u5E26
+    0~2 \u683C\u3002"
   slots: 1
   cabinMin: 1
   cabinMax: 1
@@ -26,15 +27,11 @@ MonoBehaviour:
   lore: 0
   indestructible: 1
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0
   breakChanceStart: 0.2
   repairMaterials: 0
   repairStamina: 0
   repairFreeOfMaterials: 0
-  chargeStaminaCost: 3

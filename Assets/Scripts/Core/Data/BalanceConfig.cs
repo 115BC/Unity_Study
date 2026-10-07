@@ -7,8 +7,10 @@ namespace SixtySLike
     public class BalanceConfig : ScriptableObject
     {
         [Header("拾荒(§2.1)")]
-        public int scavengerSeconds = 60;
-        public int carrySlots = 4;
+        // v0.62:`scavengerSeconds`(60)与 `carrySlots`(4)两个字段 **删除** —— 节奏改成 15 查看 + 30 拾取、
+        //   背包改成 3 格,都是定死的设计而非旋钮,搬到 `ScavengingPhase` 的代码常量里
+        //   (LookSeconds / PickSeconds / CarrySlots)。留在 SO 里 = 留一份"资产还是旧数"的第二真源。
+        //   已烘出来的 BalanceConfig.asset 里那两行会成为孤儿数据,Unity 下次存场景/资产时自己丢掉。
         public int cabinTotalSlotsMin = 31, cabinTotalSlotsMax = 42;
         public float teammateSpeedPenalty = 0.3f;
         public int hazardSecondsCost = 2;

@@ -23,9 +23,18 @@ namespace SixtySLike
         void OnEnable() { BuildSigns(); }
         void OnDisable() { for (int i = 0; i < built.Count; i++) if (built[i] != null) Destroy(built[i]); built.Clear(); }
 
+        // v0.63(用户:"**漏电/火焰/机舱/舱门/储物箱等文字都不要出现了**")
+        //   ⇒ 机舱这层"印在表面上"的那批标牌照荒岛那层同一个做法:**不印字,几何与挂点一个没动**。
+        //     这覆盖了 v0.49 那条"舱壁/舱门/储物箱上的标牌照旧保留"(§11-80 当时划的边界是"只管头顶飘着的"),
+        //     现在他把这一层也收掉了 —— 这一层靠的是"走过去、看形状",方位由 HUD 那条状态行说。
+        //     ⚠ `signs` 那份数据与烘焙器写进场景的那一版 **全留着**(还有分区牌那几块):想恢复文字改回 `true` 即可。
+        //     ⚠ 是 `static readonly` 不是 `const`:`const false` 会让下面那段判成"永不可达",每次编译刷 CS0162。
+        public static readonly bool CabinSignsVisible = false;
+
         void BuildSigns()
         {
             built.Clear();
+            if (!CabinSignsVisible) return;
             for (int i = 0; i < signs.Count; i++)
             {
                 var s = signs[i];

@@ -16,6 +16,7 @@ MonoBehaviour:
   label: "\u7528\u96E8\u4F1E\u906E\u6321"
   resultHint: "\u5168\u6E38\u620F\u552F\u4E00\u89E3:\u6BEF\u5B50\u4E0D\u80FD\u906E\u3002\u672C\u6B21\u5FC5\u635F"
   requiresItem: {fileID: 11400000, guid: 023520ae07176e24c8c235ec7b78ed83, type: 2}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

@@ -23,7 +23,7 @@ namespace SixtySLike
         static GameRoot root; static RunState S; static Database DB; static BalanceConfig B;
         static GameEventSO cur;
         static ItemSO stolen;
-        // v0.33:友善的猴子 那一对(它要收走的 / 它带来的)在事件摊开那一晚就定好,玩家才看得见
+        // v0.33:友善的狐狸 那一对(它要收走的 / 它带来的)在事件摊开那一晚就定好,玩家才看得见
         static ItemSO tradeGive, tradeGot;
         static bool shipAlsoHit;
 
@@ -98,7 +98,7 @@ namespace SixtySLike
 
         // ---------------- v0.30 日记:夜里那一条 ----------------
         // 分支只负责把"结果不同"的那几种改一下 key 或参数,落笔统一在 Choose 末尾。
-        // v0.33:参数改成 params —— 友善的猴子那句要同时点名"换出哪件、换入哪件"。
+        // v0.33:参数改成 params —— 友善的狐狸那句要同时点名"换出哪件、换入哪件"。
         static string diaryKey;
         static object[] diaryArgs;
 
@@ -163,7 +163,7 @@ namespace SixtySLike
                 if (PeekStealable(S) == null) { Show(NextFromBag()); return; }   // 兜底:仓库无可偷之物 → 这个事件不出现
                 stolen = RandomStealable(S);
             }
-            // v0.33:友善的猴子 在摊开这一晚就把"换出哪件 / 换入哪件"定下来,好让它能事先显示在屏幕上;
+            // v0.33:友善的狐狸 在摊开这一晚就把"换出哪件 / 换入哪件"定下来,好让它能事先显示在屏幕上;
             //        点"交易"只是执行这一对,不再另掷一次(否则屏幕上说的与发生的可以不是同一件事)。
             if (e == DB.MonkeyFriendly) PickTrade();
         }
@@ -230,7 +230,7 @@ namespace SixtySLike
             if (want.Count > 0) tradeGot = want[S.rng.Next(want.Count)];
         }
 
-        // 这一晚现在能选的选项(选项"不生成",不是"点了被拒":§3.2 猴子行 / §11-31)
+        // 这一晚现在能选的选项(选项"不生成",不是"点了被拒":§3.2 狐狸行 / §11-31)
         public static List<GameChoiceSO> Available()
         {
             return cur == null ? new List<GameChoiceSO>() : AvailableChoices(cur);
@@ -246,7 +246,13 @@ namespace SixtySLike
                 // v0.22:凡是这条选项 requires 某件物品,那件物品当晚就必须能点它 ——
                 //        哪怕它同时还绑在别的物体上(低温夜的"生篝火"既绑 篝火 也 requires 打火石)。
                 //        原来只有 BoundItem 一条路,结果 打火石 在低温夜点下去是"帮不上忙"。
-                if (c.requiresItem != null && c.requiresItem == it) { l.Add(c); continue; }
+                if (c.requiresItem != null && (c.requiresItem == it ||
+                    // v0.52(用户:"4.鱼饵也能喂给海鸥,即鱼饵和食物都可以喂给海鸥")
+                    //   ⇒ "A 或 B" 这一类 **两件各自都是入口**,不再要求"没有 A 才算 B"。
+                    //     以前那条 `!Has(A)` 是我 v0.50 自己加的保守判据(怕"点鱼饵扣罐头"),用户这一轮明确否掉了:
+                    //     两边都要能点。防"点的与扣的不一致"改由 **结算侧** 负责 —— `case "gull"` 现在扣 `NightTool`
+                    //     (点哪件扣哪件,与血月 下水 同一套 v0.46 机制)。
+                    c.requiresItemAlt == it)) { l.Add(c); continue; }
                 // v0.46(用户):"应对事件都是点对应的道具" —— 血月 的"下水"这一条绑的是 **两件**(潜水装置 / 鱼叉),
                 //        而 BoundItem 一个函数只能回一件 ⇒ 这里按 key 把它放宽,让两件都算"这条选项在我身上"。
                 //        ⚠ 简易浮镜 仍然不参与血月(那是 v0.12 定的选项生成条件,不在这轮六条里,见 §11-70)。
@@ -257,7 +263,7 @@ namespace SixtySLike
         }
 
         // v0.22:既不绑物品、也不绑场景物体的选项(影怪的"躲进被子"QTE、毒蛇的"点击驱赶"、飞行员的"升临时信号帆"、
-        //        没有队友时小影怪的"直接睡觉"、友善猴子的"交易")—— 它们没有可点物体,只能排在睡去按钮上方,
+        //        没有队友时小影怪的"直接睡觉"、友善狐狸的"交易")—— 它们没有可点物体,只能排在睡去按钮上方,
         //        否则整条选项在场景界面里根本没有入口。
         public static List<GameChoiceSO> ChoicesWithoutObject()
         {
@@ -266,7 +272,7 @@ namespace SixtySLike
             foreach (var c in Available())
             {
                 // 与 Sleep() 用同一条判据:"什么都不做"就是睡去按钮本身,不必再列一遍;
-                // 但 友善猴子的"交易"虽然挂着 alwaysAvailable,它不是一条"什么都不做",必须给入口。
+                // 但 友善狐狸的"交易"虽然挂着 alwaysAvailable,它不是一条"什么都不做",必须给入口。
                 if (c.alwaysAvailable && c.key != "trade") continue;
                 if (BoundItem(c) != null) continue;           // 绑在某件物品上 → 点那件物品
                 if (BoundTarget(c) != null) continue;         // 绑到 篝火/队友/尸骨/大海/营地 → 点那块地
@@ -289,9 +295,15 @@ namespace SixtySLike
             string t = BoundTarget(c);
             if (t != null) return null;
             if (c.requiresItem != null)
+            {
+                // v0.50(用户:"8.海鸥也可以使用鱼饵触发"):"A 或 B" 那一类 ⇒ 绑给 **手上有的那一件**;
+                //   两件都有时绑 罐头(结算那边就是先扣罐头)。与 `ChoicesFor` 用同一条判据。
+                if (c.requiresItemAlt != null && !S.storage.Has(c.requiresItem, 1) && S.storage.Has(c.requiresItemAlt, 1))
+                    return c.requiresItemAlt;
                 // 手上只有自制那块时,这一条要绑到 土制打火石 上,否则低温夜那晚点谁都点不到
                 return c.requiresItem == DB.Flint && !S.storage.Has(DB.Flint, 1) && S.storage.Has(DB.CrudeFlint, 1)
                     ? DB.CrudeFlint : c.requiresItem;
+            }
             switch (c.key)
             {
                 case "flare": return S.storage.Has(DB.FlareGun, 1) ? DB.FlareGun : DB.Flare;   // v0.19:点枪,不是点弹
@@ -312,7 +324,7 @@ namespace SixtySLike
             if (c.requiresFire || c.key == "fire" || c.key == "firepile") return "fire";
             if (c.requiresTeammate || c.key == "watch" || c.key == "lure") return "mate";
             if (c.key == "look") return "bones";      // v0.24:骸骨事件 —— "走过去看"绑在沙滩那具骸骨上
-            // v0.27:调皮的猴子 —— "空手抢夺"绑在那只猴子身上。夜晚它会叼着东西站在营地边,
+            // v0.27:调皮的狐狸 —— "空手抢夺"绑在那只狐狸身上。夜晚它会叼着东西站在营地边,
             //        点它 = 空手扑上去;而 鱼叉/信号枪/篝火 三条各自绑在自己的物件上,所以
             //        "手里拿着东西点物件"永远不会走到这一条。⚠ key=="grab" 是 漂流瓶 也在用的键,必须按事件区分。
             if (c.key == "grab" && cur == DB.MonkeyNaughty) return "monkey";
@@ -321,13 +333,17 @@ namespace SixtySLike
             return null;
         }
 
-        // 选项"不生成",不是"点了被拒"(§3.2 猴子行 / §11-31)
+        // 选项"不生成",不是"点了被拒"(§3.2 狐狸行 / §11-31)
         static List<GameChoiceSO> AvailableChoices(GameEventSO e)
         {
             var l = new List<GameChoiceSO>();
             foreach (var c in e.choices)
             {
-                if (c.requiresItem != null && !HasForChoice(c.requiresItem)) continue;
+                // v0.50(用户:"8.海鸥也可以使用鱼饵触发"):闸门从"没有 A 就不生成"改成 **"A、B 都没有才不生成"**。
+                //   这条以前一直在说谎:标签写着"给它 1 份罐头或鱼饵"、结算也两边都收(`case "gull"`),
+                //   但 `requiresItem` 只绑了 罐头 ⇒ 有鱼饵没罐头的那一晚,这条选项根本不出现。
+                if (c.requiresItem != null && !HasForChoice(c.requiresItem) &&
+                    !(c.requiresItemAlt != null && HasForChoice(c.requiresItemAlt))) continue;
                 // 没枪或没弹就不生成"打信号弹"这个选项(选项不生成,不是点了被拒)
                 if (c.key == "flare" && !(S.storage.Has(DB.FlareGun, 1) && HasAmmo())) continue;
                 if (c.requiresFire && !S.fireLitTonight) continue;
@@ -460,7 +476,7 @@ namespace SixtySLike
                     //   ⚠ 两条选项都算"潮水进来了",所以 **抢救露天物资 保不住火**;而做了围墙 ⇒ 这一场根本不进
                     //     ⇒ 火自然安全。这是 围墙 的新价值(它以前只保护露天物资与队友精神)。
                     // v0.48:统一成"坏 / 不坏"一套 ⇒ 涨潮 打灭火 = 把这两座灶标成 **坏**,而不是把计数器抹平。
-                    //   之后 低温夜 / 小影怪 / 赶猴子 / 影怪减伤 这些读者只要问 `HasStructure` 就自动不对它们生效,
+                    //   之后 低温夜 / 小影怪 / 赶狐狸 / 影怪减伤 这些读者只要问 `HasStructure` 就自动不对它们生效,
                     //   恢复途径与 围墙 一样在维修面板那一行(火的那一行写"重新点燃",只花一块火种)。
                     if (S.HasStructure(Database.Campfire) || S.HasStructure(Database.SignalFire))
                     {
@@ -525,7 +541,7 @@ namespace SixtySLike
                         bool lit = Roll(0.5f);
                         Diary(lit ? "flashhit" : "flashlight");
                         if (lit) return "END:A";
-                        return "50% 落空:这一轮机会用掉了(手电筒没电,飞机还会再来)。";
+                        return "光柱扫过去,没有回应 —— 这一轮的机会用掉了(手电筒没电,飞机还会再来)。";
                     }
                     if (c.key == "firepile")
                     {
@@ -597,7 +613,7 @@ namespace SixtySLike
                         S.stats.stamina = Mathf.Max(0, S.stats.stamina - 2);
                         S.storage.Add(DB.Can, 3);
                         Wear(DB.Net);
-                        return "下网:3 份罐头(渔网也会坏 —— 走 30% 起的累积概率)。";
+                        return "下网:3 份罐头(渔网每次收网都会算一次使用,它会坏)。";
                     }
                     if (c.key == "hand")
                     {
@@ -624,12 +640,17 @@ namespace SixtySLike
                 case "gull":
                     if (c.key == "feed")
                     {
-                        if (S.storage.Has(DB.Can)) S.storage.Remove(DB.Can, 1);
-                        else S.storage.Remove(DB.Bait, 1);
+                        // v0.52(用户:"鱼饵和食物都可以喂给海鸥"):**点哪件就扣哪件** —— 读 v0.46 那套 `NightTool`
+                        //   (血月 的"下水"已经在用它)。以前这里写死"有罐头就扣罐头",于是两件都在手时
+                        //   点鱼饵会出现"点的是鱼饵、扣的是罐头"—— 屏幕与结算不一致,这条我们修过好几次。
+                        //   `NightTool` 为空(从别处进来的这一条)才退回老口径:先罐头、没罐头才鱼饵。
+                        var eat = (NightTool == DB.Can || NightTool == DB.Bait) ? NightTool
+                              : (S.storage.Has(DB.Can) ? DB.Can : DB.Bait);
+                        S.storage.Remove(eat, 1);
                         S.gull.gullFedOnce = true;
                         S.gull.presentCount = 1;
                         S.gull.refreshP = B.gullRefreshBase;
-                        return "它吃下了那一份,留在岛上(在场 1 只)。全游戏只需喂这一次,后来的直接来落。";
+                        return "它吃下了那份" + eat.displayName + ",留在岛上(在场 1 只)。全游戏只需喂这一次,后来的直接来落。";
                     }
                     return "它飞走了(不算损失,下轮还会来)。";
 
@@ -639,7 +660,7 @@ namespace SixtySLike
                         S.stats.nextDayStaminaPenalty += 1;
                         return "没有队友可守:你直接睡了,次日体力 -1(不丢罐头、不坏工具、不扣生命)。";
                     }
-                    if (c.key == "watch") return "你守了一整夜:队友 100% 存活,代价是次日体力 -2。";
+                    if (c.key == "watch") return "你守了一整夜:队友没事,代价是次日体力 -2。";
                     if (c.key == "fire")
                     {
                         // v0.9 定的"火本次必熄"照字面实现:**整堆扑灭**(不是只烧掉一晚)。
@@ -729,7 +750,7 @@ namespace SixtySLike
                     head = "你用鱼叉把它赶走了:东西完好回来 +1 份罐头(鱼叉自己照常掷损坏)。";
                     break;
                 case "flare":
-                    head = "一发打出去,猴子散了:东西完好回来,但那一发弹没了(它不是无损,只是不坏)。";
+                    head = "一发打出去,狐狸散了:东西完好回来,但那一发弹没了(它不是无损,只是不坏)。";
                     break;
                 case "fire":
                     damaged = true;
@@ -743,7 +764,7 @@ namespace SixtySLike
                 default:
                     lost = true;
                     Diary("refuse", stolen.displayName);      // v0.30:日记里要写清丢了哪一件
-                    S.Log("猴子带走了 " + stolen.displayName + "(永久丢失)。");
+                    S.Log("狐狸带走了 " + stolen.displayName + "(永久丢失)。");
                     head = "你看着它跑掉:" + stolen.displayName + " 永久丢失。";
                     break;
             }
@@ -768,11 +789,11 @@ namespace SixtySLike
 
         static string MonkeyTrade(StringBuilder log)
         {
-            // v0.26 D1:猴子的回礼 —— 只要这一晚真的换成了东西,就登记"次日清晨掷 1%"。
+            // v0.26 D1:狐狸的回礼 —— 只要这一晚真的换成了东西,就登记"次日清晨掷 1%"。
             //        (换不回东西的那两条分支也算它来过、给了罐头,所以照登。)
             S.hidden.nextMorningEgg.Add("monkeytrade");
 
-            // v0.33:这一对是 PickTrade() 在摊开这一晚就定好、并且已经显示给玩家的(用户:"友善的猴子会表示换出/换入的物品")。
+            // v0.33:这一对是 PickTrade() 在摊开这一晚就定好、并且已经显示给玩家的(用户:"友善的狐狸会表示换出/换入的物品")。
             //        这里只执行,不再另掷 —— 否则屏幕上说的那件与兜里少掉的那件可能不是同一件。
             if (tradeGive == null)
             {
@@ -811,7 +832,7 @@ namespace SixtySLike
             {
                 S.hidden.hasMap = true;
                 S.storage.Add(DB.Map, 1);
-                extra = " —— 而且在礁缝里摸到了一张 藏宝图(单夜期望约 18%)。";
+                extra = " —— 而且在礁缝里摸到了一张 藏宝图。";
             }
             if (!NavigatorActive()) S.stats.nextDayCapPenalty += 1;
             Wear(tool);            // v0.46:坏的只可能是他点进来那一件
@@ -826,9 +847,9 @@ namespace SixtySLike
             {
                 if (id == EndingId.A) S.bottle.shipResolved = true;
                 else S.bottle.ghostShipResolved = true;
-                return "50% 落空:光柱扫过去,什么都没有回应 —— 错过即永久,它不再来了。";
+                return "光柱扫过去,什么都没有回应 —— 错过即永久,它不再来了。";
             }
-            return "50% 落空:这一轮机会用掉了(手电筒没电,飞机还会再来)。";
+            return "光柱扫过去,没有回应 —— 这一轮的机会用掉了(手电筒没电,飞机还会再来)。";
         }
 
         static bool FlareFails(string kind, StringBuilder log)
@@ -836,7 +857,7 @@ namespace SixtySLike
             if (kind == null) { log.Append("你手上没有可用的信号弹。\n"); return true; }
             if (kind == "土制信号弹" && !Roll(B.crudeFlareSuccessChance))
             {
-                log.Append("土制信号弹哑火了(40%)。" + Environment.NewLine);
+                log.Append("土制信号弹哑火了 —— 它消耗掉了,没有飞出去。" + Environment.NewLine);
                 return true;
             }
             log.Append(kind + " 打出去了。" + Environment.NewLine);

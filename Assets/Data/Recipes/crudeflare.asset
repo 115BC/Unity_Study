@@ -19,10 +19,14 @@ MonoBehaviour:
   resultItem: {fileID: 11400000, guid: 0afe932b3968afb4bb1cde4d6be58a46, type: 2}
   resultStructure: 
   requiresExtraItem: {fileID: 0}
-  requiresExtraItemCount: 0
+  requiresExtraItemCount: 1
+  requiresStructure: 
   supersededBy: {fileID: 0}
   requiresItemToShow: {fileID: 11400000, guid: fa6a31cdc3a04e2a9e217bf4f34f4781, type: 2}
   oncePerRun: 1
   isStructure: 0
   consumesFlint: 0
-  desc: "\u6BCF\u5C40\u9650 1 \u53D1,\u53D1\u5C04\u53EA\u6709 60% \u751F\u6548\u3002\u8865\u5F55\u2464:\u6750\u65994 \u2192 \u6750\u65993\u3002v0.16:\u5B83\u6709\u4E0A\u4F4D\u66FF\u4EE3(\u4FE1\u53F7\u5F39),\u4F46\u4F60\u70B9\u540D\u5B83\u7559\u5728\u9762\u677F\u91CC,\u6240\u4EE5\u4E0D\u6302 supersededBy\u3002v0.19:\u6CA1\u6709 \u4FE1\u53F7\u67AA \u65F6\u8FD9\u4E00\u884C\u6839\u672C\u4E0D\u51FA\u73B0(\u505A\u51FA\u6765\u4E5F\u6253\u4E0D\u51FA\u53BB)\u3002"
+  desc: "\u6BCF\u5C40\u9650 1 \u53D1,\u53D1\u5C04\u53EA\u6709 60% \u751F\u6548\u3002\u8865\u5F55\u2464:\u6750\u65994
+    \u2192 \u6750\u65993\u3002v0.16:\u5B83\u6709\u4E0A\u4F4D\u66FF\u4EE3(\u4FE1\u53F7\u5F39),\u4F46\u4F60\u70B9\u540D\u5B83\u7559\u5728\u9762\u677F\u91CC,\u6240\u4EE5\u4E0D\u6302
+    supersededBy\u3002v0.19:\u6CA1\u6709 \u4FE1\u53F7\u67AA \u65F6\u8FD9\u4E00\u884C\u6839\u672C\u4E0D\u51FA\u73B0(\u505A\u51FA\u6765\u4E5F\u6253\u4E0D\u51FA\u53BB,\xA711-51
+    \u7ED3\u6848)\u3002"

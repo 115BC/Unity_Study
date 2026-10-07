@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: take
   label: "\u8D70\u8FC7\u53BB\u770B\u770B"
-  resultHint: "\u83B7\u5F97 1 \u4E2A\u6930\u5B50;30% \u6982\u7387\u88AB\u6930\u5B50\u7838 -1 \u751F\u547D"
+  resultHint: "\u83B7\u5F97 1 \u4E2A\u6930\u5B50;\u53EF\u80FD\u88AB\u7838\u4E0B\u6765\u7684\u90A3\u9897
+    -1 \u751F\u547D"
   requiresItem: {fileID: 0}
+  requiresItemAlt: {fileID: 0}
   requiresFire: 0
   requiresStructure: 
   requiresTeammate: 0

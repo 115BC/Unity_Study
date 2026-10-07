@@ -15,7 +15,7 @@ MonoBehaviour:
   key: spear
   displayName: "\u9C7C\u53C9"
   desc: "\u552F\u4E00\u7684\u6B66\u5668:\u4F4E\u6548\u6F5C\u6C34 / \u8840\u6708\u4E0B\u6C34
-    / \u5F71\u602A\u786C\u6321(\u5FC5\u574F)/ \u8D76\u7334\u5B50(\u5B8C\u597D\u56DE\u6536
+    / \u5F71\u602A\u786C\u6321(\u5FC5\u574F)/ \u8D76\u72D0\u72F8(\u5B8C\u597D\u56DE\u6536
     +1 \u7F50\u5934,\u81EA\u8EAB\u7167\u5E38\u63B7\u635F\u574F)\u3002"
   slots: 2
   cabinMin: 1
@@ -27,13 +27,10 @@ MonoBehaviour:
   lore: 0
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0
   breakChanceStart: 0.2
   repairMaterials: 2
   repairStamina: 2

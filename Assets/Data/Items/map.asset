@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: map
   displayName: "\u85CF\u5B9D\u56FE"
-  desc: "\u8840\u6708\u591C\u4E0B\u6C34 60%\xD730% \u624D\u6389\u3002v0.13 \u4E4B\u540E\u5B83\u53EA\u5269\u4E00\u4E2A\u7528\u9014:\u63A2\u7D22\u5237\u51FA\u7684\u90A3\u5929
-    100% \u5E26\u56DE\u85CF\u5B9D\u7BB1\u3002"
+  desc: "\u53EA\u6709\u8840\u6708\u591C\u4E0B\u6C34\u3001\u8FD0\u6C14\u597D\u624D\u6478\u5F97\u5230\u3002v0.13
+    \u4E4B\u540E\u5B83\u53EA\u5269\u4E00\u4E2A\u7528\u9014:\u63A2\u7D22\u5237\u51FA\u7684\u90A3\u5929\u5FC5\u5B9A\u5E26\u56DE\u85CF\u5B9D\u7BB1\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -26,10 +26,7 @@ MonoBehaviour:
   lore: 1
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0

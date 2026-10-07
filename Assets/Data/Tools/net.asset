@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: net
   displayName: "\u6E14\u7F51"
-  desc: "\u591C\u665A\u9C7C\u7FA4\u4E0B\u7F51 / \u635E\u6F02\u6D41\u74F6\u3002v0.19:\u53EA\u5237 1 \u4EF6\u3001\u5360 2 \u683C(\u539F 3 \u683C 1~2 \u4EF6)\u3002\u5236\u4F5C\u4E0D\u518D\u9700\u8981\u673A\u68B0\u5E08\u6280\u80FD(v0.16)\u3002"
+  desc: "\u591C\u665A\u9C7C\u7FA4\u4E0B\u7F51 / \u635E\u6F02\u6D41\u74F6\u3002v0.19:\u53EA\u5237
+    1 \u4EF6\u3001\u5360 2 \u683C(\u539F 3 \u683C 1~2 \u4EF6)\u3002\u5236\u4F5C\u4E0D\u518D\u9700\u8981\u673A\u68B0\u5E08\u6280\u80FD(v0.16)\u3002"
   slots: 2
   cabinMin: 1
   cabinMax: 1
@@ -25,13 +26,10 @@ MonoBehaviour:
   lore: 0
   indestructible: 0
   fullnessRestore: 0
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 0
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0
   breakChanceStart: 0.3
   repairMaterials: 2
   repairStamina: 1

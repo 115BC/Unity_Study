@@ -16,13 +16,31 @@ namespace SixtySLike
 
         bool firstEntry = true;
         int talksToday;
-        bool fedToday, healedToday;
+        bool fedToday;        // ⚠ v0.64 删掉了 `healedToday`:它只有写、没有读(那条"用药每天一次"的规矩 **从来没有被裁过**,
+                              //   所以这里不留"看起来像前置条件"的死状态 —— 想要那条规矩,那是一轮独立的裁定,不是恢复一个旧字段)
+        IslandWalk walk;      // v0.53(§11-84):与固定镜头共存的那一路自由视角,`V` 来回
+        Shoreline shore;      // v0.58(用户:"**如果能有海浪更好**"):浪线那条会动的泡沫带,**纯演出**
 
         public void Start()
         {
             diagDone = false;
             diagAt = Time.unscaledTime + 0.4f;
             root.ApplyIslandView("IslandPhase.Start");
+            // v0.53(§11-84,用户:"共存,使用v切换" + "再实现v键切换视角"):这一层多一路 **自由行走视角**,`V` 来回切。
+            //   固定镜头仍是默认模式(v0.14 那条不作废);这个组件只做"镜头归谁 + 走近按 E",
+            //   **不改任何数值、不加任何行动、不新增任何可点物体**。
+            if (walk == null)
+            {
+                walk = gameObject.AddComponent<IslandWalk>();
+                walk.root = root;
+                // v0.54:Tab/Esc 报给这一层(行动条目只有我知道今天哪些存在),面板开着就别走路。
+                walk.onTab = ToggleDayPanel;
+                walk.onEsc = () => { if (dayPanel) CloseDayPanel(); };
+                walk.menuOpen = () => dayPanel;
+                // v0.56(用户:"**夜晚直接切到上帝视角,禁止第一人称**")⇒ 入夜自动退回固定镜头,夜里按 V 也不进自由视角。
+                //   判据从这一层给(这一层才知道现在是不是夜里),`IslandWalk` 不自己猜。
+                walk.forbidFreeLook = () => night;
+            }
             // 跳伞带上岛的储物箱内容一律转入无限容量仓库(§2.3 荒岛仓储)
             if (firstEntry)
             {
@@ -30,11 +48,22 @@ namespace SixtySLike
                 S.day = 0;
                 if (S.mate.present) S.Log(S.mate.who.displayName + " 跟你一起落在了沙滩上。");
                 if (root.islandStage == null)
-                    S.Log("⚠ 场景里没有 Island 层(天空/大海/沙滩/篝火/道具落点)。跑一次菜单 Tools/60slike/② —— 它只补缺的那一层,不覆盖你改过的东西。");
+                {
+                    // v0.61 文案收口:玩家那句只说"怎么了",修法进 Console(与 `IslandWalk` 同一条口径)
+                    S.Log("荒岛的场景层缺失,这一局只能读到文字。");
+                    Debug.LogError("[60slike] 场景里没有 Island 层(天空/大海/沙滩/篝火/道具落点)。" +
+                                   "跑菜单 Tools/60slike/② 补建 —— 它只补缺的那一层,不覆盖你改过的东西。");
+                }
                 MorningTick(true);
                 // v0.30:第一页日记 —— 从飞机上活着下来那一刻起,这本日记就开始写。
                 S.Diary(DiaryLines.Opening(S.storage.TotalUnits(), S.mate.present));
             }
+            Music.Day(S.day);
+            // v0.58(用户:"**如果能有海浪更好**" → 定案「**演出:浪线一条会动的泡沫带**」)
+            //   ⇒ 挂在 **Island 那层**(与道具同一处),半径全部从 `IslandTerrain.WaterR` 推。
+            //     **它不参与 涨潮 的任何判定**(那条仍是夜晚事件的数值)—— 所以"画着大浪而那一晚没涨"这种
+            //     两本账现在并不存在:浪一直在,涨潮是另一回事。以后要让它参与,那是新机制,得单独裁。
+            if (shore == null && root.islandStage != null) shore = Shoreline.Build(root.islandStage.transform);
             Refresh();
         }
 
@@ -46,7 +75,7 @@ namespace SixtySLike
             // v0.48(用户):火不再需要每天点一次 —— **建的时候就是点着的**,两晚烧完它自己"坏"掉。
             //   这一行只做倒计数与"归零 → 进 brokenStructures",逻辑收在 RunState.TickFiresAtDawn() 里。
             S.TickFiresAtDawn();
-            talksToday = 0; fedToday = false; healedToday = false;
+            talksToday = 0; fedToday = false;
 
             // v0.13:探索刷新骰(一天只掷一次;未命中 +5%;只有真的探索过才回落)
             if (S.explore.exploredToday) { S.explore.refreshP = B.exploreRefreshBase; S.explore.exploredToday = false; }
@@ -116,6 +145,18 @@ namespace SixtySLike
             if (S.stats.hp <= 0) { root.EndRun(EndingResolver.DeathEnding(S)); return; }
         }
 
+        // v0.52(用户:"队友处于饥荒的当天不会死亡,第二天才会死亡")
+        //   §2.4 从 v0.10 起写的就是「处于 饥荒 **且当天没有投喂** → 次日消失」,而旧代码一降进 饥荒
+        //   就在那个清晨直接判死 ⇒ **那一天根本不存在**,玩家没有机会去喂 —— 代码与文档不一致,这条按文档修。
+        //   判据拆成这个 **纯函数**(只读 `TeammateState` 与 `day`,不碰场景、不碰静态 DB)⇒ `DemoChecks.V052()`
+        //   能直接跑三天:挂期限那晨不死 / 次日仍饥荒才死 / 中间喂过就解除。(红线 65:自检里没有场景。)
+        public static bool FamineClaimsLife(TeammateState m, int day)
+        {
+            if (m.hunger != HungerLevel.Famine) { m.famineDay = -1; return false; }   // 投喂把 hunger 拉回 饱食 ⇒ 期限解除
+            if (m.famineDay < 0) { m.famineDay = day; return false; }                  // 今天是他"最后一天期限",还活着
+            return day > m.famineDay;                                                  // 下一个清晨仍然饥荒 ⇒ 消失
+        }
+
         void TickTeammate()
         {
             var m = S.mate;
@@ -133,13 +174,15 @@ namespace SixtySLike
                 S.Log(m.who.displayName + " 的病自己好了。");
             }
 
-            if (m.hunger == HungerLevel.Famine)
+            if (FamineClaimsLife(m, S.day))
             {
                 S.Log(m.who.displayName + " 在饥荒里没能撑过来 —— 空吊床在风里晃。(饥荒当天没吃东西 → 次日消失)");
                 S.Diary(DiaryLines.Day("matefamine", S.day), DiaryLineKind.Bad);
                 LoseTeammate("饥荒");
                 return;
             }
+            if (m.hunger == HungerLevel.Famine && m.famineDay == S.day)
+                S.Log(m.who.displayName + " 饿到 饥荒 了 —— 今天是他最后一天期限(白天喂他 1 份罐头就活,0 精力)。");
             if (m.mood == MoodLevel.Broken)
             {
                 // v0.29:自杀 不再有任何数值惩罚(原"当天饱食与水分各 -1"整条删除,水分那半在 v0.28 已经没了)。
@@ -205,19 +248,35 @@ namespace SixtySLike
             // 光照/镜头按"现在是不是夜晚"重算,不依赖天亮那一刻的转移有没有跑成
             // (以前只在 OnDawn 里把太阳调回来,一旦夜晚被异常打断,白天就一直是黑的)
             SetNightLook(night);
+            // ⚠ 自由视角期间 `ApplyIslandView` 自己会跳过(见 GameRoot 那条),所以这里不需要到处加 if:
+            //   镜头归谁管 **只有一个判据 = `IslandWalk.Active`**,不散落。
             root.ApplyIslandView("Refresh");
             BuildProps();
             var rt = root.hud;
             root.ClearHud();
             BuildStatusStrip(rt);
-            if (night) BuildNightHud(rt); else BuildButtons(rt);
+            // v0.54:**夜晚不摆白天那排入口 ⇒ 条目表必须是空的**。`BuildButtons` 只在白天被调用,
+            //   它开头的 Clear 管不到夜里;不清的后果是"夜里按 Tab 开出一个昨天行动的面板,点探索荒岛会执行一个此刻不存在的东西"。
+            if (night) { dayEntries.Clear(); BuildNightHud(rt); }
+            else BuildButtons(rt);
+            // v0.54:面板开着的时候,这一轮的行动条目可能变了(鱼饵挂上/摘掉、探索刷新骰刚掷过)
+            //   ⇒ 条目表是 BuildButtons 重建成的一份,**不重画就会出现"Tab 里点了没有的那条"**。
+            if (dayPanel)
+            {
+                dayPanel = false;
+                root.ClearModal();
+                OpenDayPanel();
+            }
         }
 
         void BuildStatusStrip(Transform rt)
         {
             Ui.Panel(rt, "strip", new Color(0, 0, 0, 0.42f), new Vector2(0, 1), new Vector2(0, 1),
                      new Vector2(10, -118), new Vector2(600, -10));
-            Ui.Label(rt, "day", "第 " + S.day + " 天 / " + B.survivalDaysToEndB + "   " + S.playerName, 20,
+            // v0.65(用户:"**不要显示剩余晚数,只显示生存了xx天,或者直接Dxx**"):这行以前把写法写死成"第 N 天",
+            //   现在走 `SaveData.Date()` —— 就是 设置 › 日记日期显示 那颗开关(0 = D12,1 = 第 12 天),
+            //   于是 HUD 与 日记 共用一条真源,不再各写一份。"/ 50" 是 结局B 的保底天数,照旧挂在后面。
+            Ui.Label(rt, "day", SaveData.Date(S.day) + " / " + B.survivalDaysToEndB + "   " + S.playerName, 20,
                      TextAnchor.UpperLeft, Color.white, new Vector2(0, 1), new Vector2(0, 1),
                      new Vector2(20, -36), new Vector2(590, -10));
             BuildHeart(rt);
@@ -230,30 +289,26 @@ namespace SixtySLike
             string mate = S.mate.present
                 ? "队友 " + S.mate.who.displayName + "  精神 " + MoodName(S.mate.mood) + "  饱食 " + HungerName(S.mate.hunger)
                   + (S.mate.sick ? "  生病" : "") + (S.mate.skillOfferedToday && !S.mate.skillActiveToday ? "  ✦技能待发动(悬浮队友)" : "")
-                : "队友 无(每个探索日掷 25% 看家事故)";
+                : "队友 无(看家事故每个探索日都在掷)";   // v0.66(用户:"**有关提示/概率的文字都不要出现**"):骰子怎么掷是系统的事,不写给玩家看
             Ui.Label(rt, "mate", mate, 15, TextAnchor.UpperLeft, new Color(0.8f, 0.85f, 0.9f),
                      new Vector2(0, 1), new Vector2(0, 1), new Vector2(96, -114), new Vector2(700, -88));
         }
 
         // 行楷是书法体,♥ ⚡ 这类符号不一定有字形;缺字形时 Ui.Glyph 会退到 GB2312 一定有的 ◆
-        static string HeartGlyph { get { return Ui.Glyph("♥", "◆"); } }
         static string BoltGlyph { get { return Ui.Glyph("⚡", "◆"); } }
 
-        // 一颗红心:碎裂程度 = 已经失去的生命(设计文档 §2.3 就是"一颗心裂纹贴图,无数字")。
-        // 灰盒里没有贴图:心用 ♥ 字形,裂纹用几道转过的细黑条,失去几点生命就压上几道。
+        // 一颗红心:碎裂程度 = 已经失去的生命(§2.3 一直是"一颗心裂纹贴图,无数字")。
+        // v0.49(用户:"6.贴图改变在左上角的生命值变化(也就是心脏贴图的变化改变,先找一下'碎心'的资源,没有的话我去找)"):
+        //   灰盒那版(♥ 字形 + 几道转过的黑条)换成 **运行时画出来的心形贴图** —— 每丢一点血多一条裂纹。
+        //   入口只有 `World.HeartSprite(lost)` 一个函数,以后拿到 Kenney 的 CC0 碎心图就换成"按 lost 选一张",这里不动。
+        //   ⚠ 颜色那条读法照旧(残血暗红 → 满血亮红),它是贴图之外唯一的血量线索,不数字。
         void BuildHeart(Transform rt)
         {
             int lost = B.hpMax - S.stats.hp;
             float t = B.hpMax <= 0 ? 0f : (float)S.stats.hp / B.hpMax;
-            Ui.Label(rt, "heart", HeartGlyph, 52, TextAnchor.MiddleCenter,
-                     Color.Lerp(new Color(0.42f, 0.1f, 0.12f), new Color(0.93f, 0.17f, 0.2f), t),
-                     new Vector2(0, 1), new Vector2(0, 1), new Vector2(16, -92), new Vector2(84, -36));
-            for (int i = 0; i < lost; i++)
-            {
-                var c = Ui.Panel(rt, "crack" + i, new Color(0.04f, 0.04f, 0.05f, 0.9f),
-                                 new Vector2(0, 1), new Vector2(0, 1), new Vector2(22, -70), new Vector2(78, -66));
-                c.localEulerAngles = new Vector3(0f, 0f, -34f + i * 24f);
-            }
+            Ui.Icon(rt, "heart", World.HeartSprite(lost),
+                    Color.Lerp(new Color(0.42f, 0.1f, 0.12f), new Color(0.93f, 0.17f, 0.2f), t),
+                    new Vector2(0, 1), new Vector2(0, 1), new Vector2(16, -92), new Vector2(84, -36));
         }
 
         // 精力:满格画满 staminaMax 个 ⚡。亮黄 = 还能用;灰 = 已花掉,或今天因为生病/下水被扣掉不能用。
@@ -274,31 +329,91 @@ namespace SixtySLike
 
         void BuildButtons(Transform rt)
         {
-            Ui.Button(rt, "diary", "日记", 20, OpenDiary, new Color(1, 1, 1, 0.14f),
-                      new Vector2(1, 1), new Vector2(1, 1), new Vector2(-140, -70), new Vector2(-16, -18));
+            // v0.54(用户:"**生存视角切换后第一人称游玩,用e与物品交互,tab键可以用鼠标选择结束一天/探索荒岛**")
+            //   ⇒ 自由视角下 **这几个入口不常驻屏幕**,全部登记进 `dayEntries`,由 Tab 面板用鼠标选;
+            //     固定镜头那一层 **一个像素没动**(他上一轮选的"全保留"继续生效在这一层,夜晚那一屏他说明白"不动")。
+            //   ⚠ 条目 **只有一份表**:摆按钮与摆面板读同一个 `dayEntries` ——
+            //     两处各写一遍的话,"屏上有 5 个入口、Tab 里 4 个"这种谎一定会出现(名单类问题本项目记过好几次)。
+            dayEntries.Clear();
+            Day(rt, "diary", "日记", 20, OpenDiary, new Color(1, 1, 1, 0.14f),
+                new Vector2(1, 1), new Vector2(1, 1), new Vector2(-140, -70), new Vector2(-16, -18));
 
             // v0.15:探索按钮"刷新才出现"。没刷出的那天这一屏上根本没有它 ——
             // 不再是 v0.13 那版"置灰 + 一行小字"。仍然不弹窗、不加红点、不加解释文案。
             var explore = Act("explore");
             string why = "";
             if (explore != null && CanDo(explore, out why))
-                Ui.Button(rt, "explore", explore.displayName + "\n吃掉全部剩余精力" + BoltGlyph,
-                          18, DoExploreNow, new Color(0.85f, 0.5f, 0.18f, 1f),
-                          new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-232, -34), new Vector2(-16, 46));
+                Day(rt, "explore", explore.displayName + "\n吃掉全部剩余精力" + BoltGlyph,
+                    18, DoExploreNow, new Color(0.85f, 0.5f, 0.18f, 1f),
+                    new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-232, -34), new Vector2(-16, 46));
 
-            Ui.Button(rt, "bench", "制造(维修)面板", 20, OpenBench, new Color(0.3f, 0.42f, 0.55f, 1f),
-                      new Vector2(1, 0), new Vector2(1, 0), new Vector2(-210, 120), new Vector2(-16, 172));
+            Day(rt, "bench", "制造(维修)面板", 20, OpenBench, new Color(0.3f, 0.42f, 0.55f, 1f),
+                new Vector2(1, 0), new Vector2(1, 0), new Vector2(-210, 120), new Vector2(-16, 172));
 
-            Ui.Button(rt, "endday", "结束一天", 22, () => BeginNight(), new Color(0.55f, 0.25f, 0.55f, 1f),
-                      new Vector2(1, 0), new Vector2(1, 0), new Vector2(-190, 16), new Vector2(-16, 72));
+            Day(rt, "endday", "结束一天", 22, () => BeginNight(), new Color(0.55f, 0.25f, 0.55f, 1f),
+                new Vector2(1, 0), new Vector2(1, 0), new Vector2(-190, 16), new Vector2(-16, 72));
 
             // v0.18:鱼饵开关。手上没有鱼饵时这个开关根本不出现(入口不生成,不是置灰)。
             if (S.storage.Has(DB.Bait))
-                Ui.Button(rt, "bait", (S.useBait ? "鱼饵:挂着" : "鱼饵:不挂") + "\n点一下切换",
-                          15, () => { S.useBait = !S.useBait; Refresh(); },
-                          S.useBait ? new Color(0.30f, 0.46f, 0.30f, 1f) : new Color(1f, 1f, 1f, 0.14f),
-                          new Vector2(0, 0), new Vector2(0, 0), new Vector2(16, 16), new Vector2(210, 74));
+                Day(rt, "bait", (S.useBait ? "鱼饵:挂着" : "鱼饵:不挂") + "\n点一下切换",
+                    15, () => { S.useBait = !S.useBait; Refresh(); },
+                    S.useBait ? new Color(0.30f, 0.46f, 0.30f, 1f) : new Color(1f, 1f, 1f, 0.14f),
+                    new Vector2(0, 0), new Vector2(0, 0), new Vector2(16, 16), new Vector2(210, 74));
+
+            // 自由视角下屏上只留一行"Tab 在这里"的指路 —— 不写按钮、不写解释文案,一条短提示。
+            if (IslandWalk.Active && dayEntries.Count > 0)
+                Ui.Label(rt, "tabHint", "Tab = 白天的行动(" + dayEntries.Count + " 条)", 16, TextAnchor.MiddleRight,
+                         new Color(0.82f, 0.86f, 0.92f), new Vector2(1, 0), new Vector2(1, 0),
+                         new Vector2(-280, 92), new Vector2(-16, 120));
         }
+
+        // 白天入口的唯一登记表。`free` 时 **只登记不摆** —— 所以 Tab 面板与那几个按钮从来不会条目不一致。
+        void Day(Transform rt, string key, string label, int size, Action act, Color col,
+                 Vector2 aMin, Vector2 aMax, Vector2 oMin, Vector2 oMax)
+        {
+            dayEntries.Add(new DayEntry { key = key, label = label, act = act });
+            if (IslandWalk.Active) return;
+            Ui.Button(rt, key, label, size, act, col, aMin, aMax, oMin, oMax);
+        }
+
+        class DayEntry { public string key; public string label; public Action act; }
+        readonly List<DayEntry> dayEntries = new List<DayEntry>();
+
+        // ── v0.54:Tab 面板(自由视角专用)。定案:**点一条就执行并关闭;Tab/Esc 空关**;不弹确认框的全局口径照旧
+        //    (≥2 精力那条例外仍由 `ConfirmStamina` 在 action 内部把关 —— 这里不加任何新确认)。
+        bool dayPanel;
+
+        public void ToggleDayPanel() { if (dayPanel) CloseDayPanel(); else OpenDayPanel(); }
+        public bool DayPanelOpen { get { return dayPanel; } }
+
+        void OpenDayPanel()
+        {
+            if (dayEntries.Count == 0) return;          // 夜晚那一屏 / 今天一条行动都没有 ⇒ 不生成空面板
+            root.ClearModal();
+            dayPanel = true;
+            var m = root.modal;
+            Ui.Panel(m, "dim", new Color(0, 0, 0, 0.78f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            int n = dayEntries.Count;
+            Ui.Panel(m, "box", new Color(0.12f, 0.14f, 0.18f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                     new Vector2(-240, 20 + n * 56), new Vector2(240, -52));
+            Ui.Label(m, "h", "白天的行动", 20, TextAnchor.UpperCenter, Color.white,
+                     new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-200, -44), new Vector2(200, -14));
+            float y = -56;
+            for (int i = 0; i < n; i++)
+            {
+                var act = dayEntries[i].act;            // 循环变量要抓进局部,否则全部按钮都执行最后一条
+                Ui.Button(m, "dayact" + i, dayEntries[i].label, 18,
+                          () => { CloseDayPanel(); act(); },
+                          new Color(1, 1, 1, 0.12f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                          new Vector2(-216, y - 48), new Vector2(216, y));
+                y -= 54;
+            }
+            Ui.Label(m, "hint", "点一条就执行并关闭 · Tab / Esc 空关", 14, TextAnchor.MiddleCenter,
+                     new Color(0.6f, 0.66f, 0.74f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                     new Vector2(-216, y - 34), new Vector2(216, y + 4));
+        }
+
+        void CloseDayPanel() { dayPanel = false; root.ClearModal(); }
 
         ActivitySO Act(string key)
         {
@@ -390,6 +505,16 @@ namespace SixtySLike
             // 道具是 Island 那层的子物体,不是本阶段的:阶段被销毁时不自己收,它们会留在结局画面上
             for (int i = 0; i < props.Count; i++) if (props[i] != null) Destroy(props[i]);
             props.Clear();
+            // ⚠ 同一条适用于 v0.58 那三条泡沫带:它也挂在 Island 层下,不在这儿收掉就会 **留在结局屏上继续呼吸**
+            if (shore != null) { Destroy(shore.gameObject); shore = null; }
+            // v0.49:**夜里那层环境光要在这里交回去**。`RenderSettings` 是全局的,而本阶段随时可能在夜里
+            //   被结局/下一局销毁(死亡、通关、重开)。不交还 ⇒ 下一局的机舱会带着夜晚的冷蓝环境光开场,
+            //   而且下一个 IslandPhase 存的是"那一份错的",于是整个项目永久变暗。
+            if (dayAmbientSaved)
+            {
+                RenderSettings.ambientMode = dayAmbientMode;
+                RenderSettings.ambientLight = dayAmbientColor;
+            }
         }
 
         void LateUpdate()
@@ -403,10 +528,36 @@ namespace SixtySLike
         // v0.46:夜晚"今晚用得上"的那件东西,悬浮时牌子换成这个亮黄(完好/破损的材质色不动,只动字)
         static readonly Color NightUsableGlow = new Color(1f, 0.86f, 0.30f, 1f);
 
+        // v0.49(用户:"还是小了点"):沙滩上一件道具的**视觉尺寸**(最长边)。0.75 是灰盒方块时代的数 ——
+        //   方块填满自己的格子所以看着不小,真模型按最长边收进 0.75 之后,在 15 米外的镜头里就成了渣。
+        //   上限由落点间距决定:`DemoAssetBaker` 里是 x 每格 2.2、排距 z 1.6 ⇒ 1.15 不会与邻格重叠。
+        //   ⚠ 这是"看得清"优先于"真实比例"(60秒! 原版也是大图标),要整体调就改这一个数。
+        public const float ItemVisual = 1.15f;
+
+        // v0.51(用户:"土质信号弹,打火石放小一点")⇒ 这两件单独一档。
+        //   ⚠ 这张表 **只管沙滩那一层**,而且 **模型与灰盒球都吃同一个数**(改的是传给 `PropAt` 的格子尺寸,
+        //     不是 `PlaceModel` 里那个只作用于模型的倍率)—— 不然装了模型的会动、没装模型的不动,又是一处两层不一致。
+        //   ⚠ 它是 **public** 只为让自检能读这张表:**key 拼错不会报错,只会静默不生效**(东西照旧大)——
+        //     而 `flint` 与 `crudeflint` 这两个 key 差一个前缀,正是最容易拼错的那一种。
+        public static readonly Dictionary<string, float> SmallOnBeach = new Dictionary<string, float>
+        {
+            { "crudeflare", 0.5f },     // 土制信号弹:一个火柴盒大的东西,原来跟罐头一样大
+            { "flint", 0.55f },         // 打火石(那块石头)
+        };
+
+        float BeachSize(ItemSO k)
+        {
+            float f;
+            return k != null && SmallOnBeach.TryGetValue(k.key, out f) ? ItemVisual * f : ItemVisual;
+        }
+
         void BuildProps()
         {
             for (int i = 0; i < props.Count; i++) if (props[i] != null) Destroy(props[i]);
             props.Clear();
+            // v0.53(§11-84):道具层每轮重建 ⇒ 通知自由视角"你缓存的那些 IslandProp 全作废了"。
+            //   不通知的后果不是崩,是 **按 E 打在一堆已销毁的物体上**(Unity 的 Destroy 是延迟的,引用还活着)。
+            if (walk != null) walk.MarkStale();
             var st = root.islandStage;
             if (st == null) return;
 
@@ -415,12 +566,36 @@ namespace SixtySLike
             foreach (var k in keys)
             {
                 var it = k;
+                // v0.49(用户:"3.可以不用了"):**信号弹 不再摆实体** —— 弹装在枪里,屏幕上只出现 信号枪 一件。
+                //   这只改"看得见的东西",不动任何数值:携带条照常占格、面板照常计数;夜晚打弹点的是枪
+                //   (`BoundItem` 的 "flare" 一律返回枪,v0.19 定案),所以没有任何选项会因此失去入口。
+                if (k == DB.Flare) continue;
+                // v0.50(用户:"9.彩蛋物品不要出现在地图上了,放进日志里")
+                //   ⇒ 这 15 件 `lore=1` 的件 **平时不在沙滩摆实体**。拿到的信息仍然有两条出口:
+                //     ①当时那一句彩蛋日记(`DiaryLineKind.Egg`)②主菜单「收集」页(拿到后连说明全文一起给)。
+                //     数值与判定一个都没动:照常进仓库、照常占格、照常算图鉴。
+                //   ⚠ **但有一件不能整批摘,而且我不能靠名单写死**:夜晚那条"把藏宝箱推过去"绑的是 **箱子那块实体**
+                //     (`NightResolver.BoundItem` 的 `case "offer" → DB.Chest`;而 `ChoicesWithoutObject` 会跳过
+                //     任何 `BoundItem != null` 的选项)⇒ 一刀切就把 **真结局 T 的入口摘掉了**。
+                //     判据因此走"当晚这条选项到底存不存在"这 **一条** 现成的路:`ChoicesFor(k)` 读的是当前事件
+                //     过滤后的可用选项(要 有箱 + 有钥匙 + 没打过T 才生成),所以箱子只在"那一晚真的能推"时出现。
+                //     ⇒ 不是例外名单,是同一个真源的两种表现;以后再有彩蛋件被选项绑上,这条自动生效。
+                if (k.lore && NightResolver.ChoicesFor(k).Count == 0) continue;
                 // v0.37:这件东西 **现在能不能用** 由材质说 —— 完好色 / 破损暗红两种。
                 //        v0.45 起不需要再判"还剩没剩完好件":一件东西只有两种状态。
                 bool brokenLook = S.storage.HasBroken(k);
                 // 点一下就直接执行(夜晚则直接做今晚那条选项);代价不再写在悬浮条上 —— 那条渠道已删
-                var go = Prop(st.Slot(StableSlot(k)), k.displayName, PropShape(k), World.ItemMat(k, brokenLook),
-                              () => { if (night) NightClick(it); else UseItem(it); }, HoverExtra(k));
+                // v0.49:多传一个 `k.key` ⇒ `Assets/Resources/Models/<key>.fbx` 存在就用真模型,不存在照旧是方块
+                var go = PropAt(k == DB.FishingRod ? RodSeaPos()             // v0.52:钓竿 离开道具格,见 `RodSeaPos`
+                                                   : st.Slot(StableSlot(k)).position,
+                              k.displayName, PropShape(k), Color.white,
+                              () => { if (night) NightClick(it); else UseItem(it); },
+                              // v0.49(用户:"还是小了点"):0.75 是灰盒方块时代的数 —— 方块填满自己的格子所以看着不小,
+                              //   而真模型(尤其细长件)按最长边收进 0.75 之后,在 15 米外的镜头里就成了渣。
+                              //   落点间距是 x 2.2 / 排距 z 1.6,所以 1.15 仍然不会与邻格重叠(队友按身高 1.8 单独给)。
+                              // v0.51(用户:"土质信号弹,打火石放小一点"):那两件另算一档,见 `SmallOnBeach`。
+                              Vector3.one * BeachSize(k), BeachSize(k) * 0.5f, World.ItemMat(k, brokenLook), HoverExtra(k),
+                              k.key, brokenLook);
                 // v0.46(用户):"夜晚可以应对事件的道具,鼠标悬浮上去后把名字更改颜色"
                 //   ⇒ 判据就是 夜晚那条选项的同一张表(NightResolver.ChoicesFor),不是另写一份名单 ——
                 //     否则"标了亮色但点下去说帮不上忙"迟早会出现。绑在 篝火/大海/队友 上的那几条不在物品上,不发光。
@@ -429,6 +604,14 @@ namespace SixtySLike
                     var ip = go.GetComponent<IslandProp>();
                     if (ip != null && NightResolver.ChoicesFor(k).Count > 0) ip.hoverColor = NightUsableGlow;
                 }
+                // v0.49(用户:"灯光系统在篝火和手电筒再加一下(二者的光)"):手电筒 **有电就发一点光**。
+                //   电量原来只是牌子上的一个数字(要悬浮上去才看得见)⇒ 现在把它写成"看得见的那一档":
+                //   0 格没有灯、1 格一小团、2 格更远更亮。
+                //   ⚠ 这 **不是一个新行动**,不改任何数值,只是把已有的 `flashlightCharge` 露在屏幕上;
+                //     "拿在手上往前照"是聚光,它属于第一人称那一轮(§11-84),到时这盏灯搬到镜头上。
+                if (k == DB.Flashlight && S.flashlightCharge > 0)
+                    World.PointLight(go, Vector3.up * (ItemVisual * 0.45f), new Color(0.72f, 0.85f, 1f),
+                                     0.9f * S.flashlightCharge, 2.5f + 2f * S.flashlightCharge, false);
                 props.Add(go);
             }
 
@@ -437,6 +620,11 @@ namespace SixtySLike
                 // 夜里"篝火"这处不是物品,给它一块能点的地面(名字已经印在沙上了,不再挂标签)
                 props.Add(PropAt(st.fireAnchor.position, "", PrimitiveType.Cylinder, new Color(0.30f, 0.20f, 0.10f),
                                  () => NightClickTarget("fire"), new Vector3(1.9f, 0.05f, 1.9f), 0.05f));
+                // v0.50(用户:"5.搜寻飞机能加入远方的动画吗")
+                //   ⇒ 这一晚 远处真的有一架飞机掠过。**它不是新机制** —— 那条事件的描述从 v0.6 就写着
+                //     "远处有机影掠过",而屏幕上一直没有那架飞机,所以这是把已经说出口的话画出来。
+                //     判定、选项、数值一个字都没动:它纯粹是那晚的背景演出,不可点、不参与任何结算。
+                if (NightResolver.Current == DB.SearchPlane) props.Add(DistantPlane(st.transform));
             }
             // 大海:v0.28 起 喝海水 已随喝水系统删除 ⇒ 白天点它什么都不发生,它只在夜晚当"徒手抓鱼/下水"的落点
             if (st.seaAnchor != null)
@@ -446,13 +634,36 @@ namespace SixtySLike
 
             if (S.mate.present)
             {
+                // v0.50(用户:"7.白天与队友交互的判定点移到队友头部(或者直接把队友放到打火石前面吧)" —— 你选的是后者):
+                //   原来他在 `mateAnchor`(-6.8, 0, 1.6)= 道具排 **后面**,挡的是火堆/尸骨那一片;
+                //   现在挪到 **打火石那一格的靠镜头一侧**(+z 一行)。仍然按 `StableSlot(DB.Flint)` 走,
+                //   不写死坐标 ⇒ 以后动布局他跟着走。⚠ 代价我说明白:人 1.8 米高、站在某一格前面,
+                //   屏幕上会盖住 **他身后那一列** 的一部分 —— 真挡住了说一声,退路是换一列或给他让开半格。
+                var fp = st.Slot(StableSlot(DB.Flint)).position;
+                var matePos = new Vector3(fp.x, 0f, fp.z + 1.6f);
                 // v0.41:队友不再是"悬浮才出菜单",而是 **点一下开子面板**(谈话 / 喂食 /〔技能〕/〔食用〕)。
                 // 夜晚仍然不开面板 —— 那晚他身上挂的是事件选项,点一下直接做。
-                var mateGo = PropAt(st.mateAnchor.position, S.mate.who.displayName, PrimitiveType.Capsule,
+                var mateGo = PropAt(matePos, S.mate.who.displayName, PrimitiveType.Capsule,
                                     new Color(0.85f, 0.55f, 0.2f),
                                     () => { if (night) NightClickTarget("mate", NightResolver.CalmTalkOffered ? "说说话(免体力)" : null, CalmTalkNow); else OpenMatePanel(); },
-                                    new Vector3(0.9f, 0.9f, 0.9f), 0.9f);
+                                    new Vector3(0.9f, 0.9f, 0.9f), 0.9f, null, null,
+                                    // v0.49:队友用现代装的模型(`mate_<队友key>.fbx`);没装就还是那颗胶囊。
+                                    //        ⚠ 谁穿哪件是我挑的(飞行员=衬衫 / 领航员=休闲女 / 机械师=西装),
+                                    //        换人只需换 `Assets/Resources/Models/` 里的文件,代码与数值都不动。
+                                    //        `modelSize` 单独给 1.8 高:方块那条路是"0.9 的胶囊 = 1.8 高",
+                                    //        模型若也按 0.9 归一,人就会被压成半人高(菜单⑤ 量出来的)。
+                                    "mate_" + S.mate.who.key, false, new Vector3(1.2f, 1.8f, 1.2f));
                 props.Add(mateGo);
+                // v0.50(用户:"6.队友在夜晚呈现躺下的状态(能给他裹个被子什么的吗)" —— 追问后你选的读法是 **"一律盖一条"**)
+                //   ⇒ 夜里他躺下,并且 **不管仓库里有没有毯子都盖一条**。这条要说清楚:那是画面比仓库多说了一条毯子,
+                //     是你要的效果,不是 bug;它不改任何数值(毯子照常只在"低温夜裹毯子"那条选项里被使用/打坏)。
+                if (night)
+                {
+                    LayDown(mateGo);
+                    props.Add(PropAt(new Vector3(matePos.x, 0.02f, matePos.z + 0.55f), "", PrimitiveType.Cube,
+                                     new Color(0.74f, 0.62f, 0.44f), null,
+                                     new Vector3(2.4f, 0.08f, 1.6f), 0.04f, null, null, "blanket"));
+                }
             }
             // v0.24:骸骨只在"它出现的那一晚"摆在地上 —— 第二天它就被海水带回去了(不掩埋、不留到白天)。
             //        白天没有可点的尸骨,所以也不再有"到白天再掩埋"这条路。
@@ -460,32 +671,41 @@ namespace SixtySLike
                 props.Add(PropAt(st.bonesAnchor.position, "骸骨", PrimitiveType.Capsule,
                                  new Color(0.86f, 0.84f, 0.76f),
                                  () => NightClickTarget("bones"),
-                                 new Vector3(0.7f, 0.5f, 0.7f), 0.25f));
+                                 new Vector3(1.4f, 0.9f, 1.4f), 0.25f, null, null, "bones"));
 
-            // v0.27:调皮的猴子 也要有一个能点的身体。它叼着东西站在营地边,点它 = 空手扑上去(唯一入口);
+            // v0.27:这只夜里来偷东西的兽 也要有一个能点的身体。它叼着东西站在营地边,点它 = 空手扑上去(唯一入口);
             //        鱼叉 / 信号枪 / 篝火 那三条各自绑在自己的物件上,所以"拿着东西点"永远走不到这一条。
             //        没有专用挂点(那属于 §11-53 的布局轮),按营地方位推一格,挪 篝火 挂点它会跟着走。
+            // v0.49(用户:"改吧"):这场事件从 monkey 换成 狐狸 ⇒ 标牌跟着改;target 的键 "monkey" **不动**
+            //        (改了要连 ChoicesByTarget、NightClickTarget、日记字典键、DemoChecks 断言一起搬,纯亏)。
             if (night && NightResolver.ChoicesByTarget("monkey").Count > 0)
                 props.Add(PropAt(st.fireAnchor.position + new Vector3(-1.6f, 0f, 1.2f),
-                                 "猴子", PrimitiveType.Capsule, new Color(0.42f, 0.30f, 0.20f),
+                                 "狐狸", PrimitiveType.Capsule, new Color(0.42f, 0.30f, 0.20f),
                                  () => NightClickTarget("monkey"),
-                                 new Vector3(0.6f, 0.8f, 0.6f), 0.4f));
+                                 new Vector3(0.9f, 1.1f, 0.9f), 0.55f, null, null, "fox"));
 
             for (int i = 0; i < S.gull.presentCount; i++)
             {
                 var p = st.gullAnchor.position + new Vector3(i * 1.15f - 1.7f, 0f, i % 2 * 0.9f);
                 props.Add(PropAt(p, i == 0 ? "海鸥" : "", PrimitiveType.Sphere, new Color(0.94f, 0.95f, 0.97f),
-                                 ScatterGulls, new Vector3(0.5f, 0.35f, 0.5f), 0f));
+                                 ScatterGulls, new Vector3(0.85f, 0.6f, 0.85f), 0f, null, null, "gull"));
             }
             // v0.47:两把火各有各的火苗 —— 篝火 在 fireAnchor 那格,信号火堆 在自己那一格。
             //        原来那一条 "if (S.fireLitTonight)" 的火苗现在只算 篝火 的(否则 信号火堆 烧着时
             //        会在篝火的位置冒出一根不存在的火)。
             // v0.48:两把火各有各的火苗,**判据是"没坏"(= 还点着)**,不再是直接读计数器。
-            if (S.HasStructure(Database.Campfire))
+            // v0.49:灶 用上真模型之后这根胶囊就不摆了 —— `Bonfire_Fire.fbx` 自己就是"正在烧"的样子,
+            //        再压一根方块火苗在头顶只会穿帮。没有模型时它照旧出现(灰盒兜底)。
+            // v0.47:两把火各有各的火苗(判据是"没坏"= 还点着,不再是直接读计数器)。
+            // v0.49:灶 用上真模型之后这根胶囊就不摆了 —— `Bonfire_Fire.fbx` 自己就是"正在烧"的样子。
+            // v0.64(用户:"**信号火堆直接替代火堆**" + 定案「升级替换」):**两档现在站在同一格里**
+            //        (`structures` 里同一时刻只可能有一档 ⇒ 营地里始终只有一摊火),所以两截火苗都改挂 fireAnchor,
+            //        高度按各自那一档的身量抬 —— 再留在 -4.2 那一格就会出现"升级之后原地两摊火"。
+            if (S.HasStructure(Database.Campfire) && !World.HasModel(Database.Campfire))
                 props.Add(PropAt(st.fireAnchor.position + Vector3.up * 0.4f, "", PrimitiveType.Capsule,
                                  new Color(1f, 0.55f, 0.12f), null, new Vector3(0.7f, 0.4f, 0.7f), 0f));
-            if (S.HasStructure(Database.SignalFire))
-                props.Add(PropAt(StructureBase(st) + new Vector3(-4.2f, 1.7f, 0.4f), "", PrimitiveType.Capsule,
+            if (S.HasStructure(Database.SignalFire) && !World.HasModel(FireModelKey(Database.SignalFire)))
+                props.Add(PropAt(st.fireAnchor.position + Vector3.up * 0.7f, "", PrimitiveType.Capsule,
                                  new Color(1f, 0.68f, 0.20f), null, new Vector3(1.1f, 1.0f, 1.1f), 0f));
 
             // 建筑摆在篝火两侧;x 的符号按"屏幕左 = 世界 +x"取(相机 yaw=180)
@@ -493,10 +713,25 @@ namespace SixtySLike
             StructureProp(st, Database.Wall, "围墙", PrimitiveType.Cube, new Vector3(7f, 0.9f, 0.18f),
                           new Color(0.52f, 0.4f, 0.26f), new Vector3(0f, 0.45f, -1.4f));
             // v0.48:两件火 **不用点** —— 建的时候就是烧着的。白天点它只会告诉你状态,夜晚点它交给 target "fire"。
-            StructureProp(st, Database.SignalFire, "信号火堆", PrimitiveType.Cylinder, new Vector3(1.6f, 0.8f, 1.6f),
-                          new Color(0.75f, 0.66f, 0.55f), new Vector3(-4.2f, 0.8f, 0.4f), FireInfoSignalFire, true);
-            StructureProp(st, Database.Campfire, "篝火", PrimitiveType.Cube, new Vector3(1.1f, 0.24f, 1.1f),
+            // v0.49(用户:"还是小了点"):两件火跟着道具一起放大(道具 0.75→1.15,火堆 1.1→1.7 / 1.6→2.4),
+            //   否则"一罐比一堆火还高"。⚠ 夜里那块 Ø1.9 的可点地面不跟着变 —— 它比篝火的 1.7 小一点没关系,
+            //   射线先命中灶块,而灶块夜晚那一支就是转给 target "fire" 的(红线 60)。
+            // v0.64(定案「**升级替换**」):**两档火共用 fireAnchor 那一格** —— 账上同一时刻只可能有一档
+            //   ⇒ 营地里永远只摊着一堆火;信号档比篝火大一圈(2.4 vs 1.7),升级在画面上就是"同一堆火垒高了"。
+            var signalFire = StructureProp(st, Database.SignalFire, "信号火堆", PrimitiveType.Cylinder, new Vector3(2.4f, 1.2f, 2.4f),
+                          new Color(0.75f, 0.66f, 0.55f), Vector3.zero, FireInfoSignalFire, true, st.fireAnchor);
+            var campfire = StructureProp(st, Database.Campfire, "篝火", PrimitiveType.Cube, new Vector3(1.7f, 0.4f, 1.7f),
                           new Color(0.35f, 0.26f, 0.18f), Vector3.zero, FireInfoCampfire, false, st.fireAnchor);
+            // v0.49(用户:"灯光系统在篝火和手电筒再加一下(二者的光)"):**灯只挂在"还点着"的那堆火上** ——
+            //   判据与火苗、牌子上的"烧 N 晚 / 熄了"完全同一条 `HasStructure`(v0.48 那套统一模型),
+            //   不再另开一个"今天着没着"的状态。熄了 ⇒ 灯不存在 ⇒ 那一格真的黑下来,
+            //   这正是"要不要花 1 精力重新点燃"在屏幕上该有的一份分量。
+            //   ⚠ 背景板与天空是 `Unlit/Color`,**不受这盏灯影响**(预期):它们是"画上去的天",不是场景里的东西。
+            if (campfire != null && S.HasStructure(Database.Campfire))
+                World.PointLight(campfire, new Vector3(0f, 0.55f, 0f), new Color(1f, 0.52f, 0.16f), 2.4f, 8f, true);
+            // 信号火堆 比篝火大一圈,又是"给远处的船看的" ⇒ 光给得更远更亮(同一句视觉话,不改任何数值)
+            if (signalFire != null && S.HasStructure(Database.SignalFire))
+                World.PointLight(signalFire, new Vector3(0f, 1.1f, 0f), new Color(1f, 0.62f, 0.24f), 3.2f, 13f, true);
         }
 
         // burning = 这件建筑是"火"(要点的是它、牌子上要写剩余晚数);at 是相对营地方位的偏移,
@@ -509,10 +744,10 @@ namespace SixtySLike
                 ? st.fireAnchor.parent.position : st.transform.position;
         }
 
-        void StructureProp(IslandStage st, string key, string name, PrimitiveType shape, Vector3 scale, Color c, Vector3 at,
+        GameObject StructureProp(IslandStage st, string key, string name, PrimitiveType shape, Vector3 scale, Color c, Vector3 at,
                            Action onClick = null, bool burning = false, Transform host = null)
         {
-            if (!S.structures.Contains(key)) return;   // 建过就一直摆着:裂了也还在原地(下面换成裂开的颜色)
+            if (!S.structures.Contains(key)) return null;   // 建过就一直摆着:裂了也还在原地(下面换成裂开的颜色)
             // v0.46:围墙 会坏 ⇒ 建过 ≠ 还在用。灰盒里没有"裂开的模型",所以先用 **同一块几何换成破损暗红** 表达
             //        "它立在那儿,但这一晚它挡不住东西了"。以后换真模型时,这里就是那个口子。
             var baseAt = host != null ? host.position : StructureBase(st);
@@ -522,20 +757,90 @@ namespace SixtySLike
             if (burning)
             {
                 // v0.48:**火的"坏"就是"熄了"** —— 与 围墙 共用同一套"坏 / 不坏"模型(用户:"统一成一套吧")。
-                //   所以这里读的不再是计数器,而是 `HasStructure`(没坏 = 还点着);计数器只回答"还剩几晚"。
+                //   所以这里读的不再是计数器,而是 `HasStructure`(没坏 = 还点着)。
+                // v0.65(用户:"**不要显示剩余晚数**"):牌子从「篝火 烧 2 晚」改成 **只有名字**,
+                //   灭了才多两个字「熄了」—— 这一格回到 §2 那条"标签只显示名称"的通则上,
+                //   v0.47 我为"还剩几晚是看不见就没法决策的数"开的那处 **有意例外由他收回**(数值一条没动)。
                 bool lit = S.HasStructure(key);
-                label = name + (lit ? "  烧 " + S.NightsLeft(key) + " 晚" : "  熄了 · 面板里重新点燃");
+                label = lit ? name : name + " 熄了";
                 if (lit) col = FireBurningColor;
                 // ⚠ 这块灶与"夜里 篝火 那块能点的地面"(上面 night 分支)**在同一格重叠**,而 Unity 的射线取最近碰撞体
                 //   ⇒ 夜里点上去命中的是这块灶。**所以夜晚不能在这里回一句"点火是白天的事"就完事** ——
-                //   那会把绑在 target "fire" 上的四条夜晚选项(低温夜点灶 / 小影怪硬撑 / 赶猴子篝火驱赶 / 搜寻飞机 firepile)
+                //   那会把绑在 target "fire" 上的四条夜晚选项(低温夜点灶 / 小影怪硬撑 / 赶狐狸篝火驱赶 / 搜寻飞机 firepile)
                 //   全部挡住。正确做法与物品那条一模一样:夜里点它 = 走夜晚那条路(上一轮我写成了拒绝,是 bug)。
                 if (onClick != null) { var act = onClick; onClick = () => { if (night) NightClickTarget("fire"); else act(); }; }
             }
-            props.Add(PropAt(pos, label, shape, col, onClick, scale, scale.y * 0.5f));
+            // v0.49:建筑也走真模型(`Assets/Resources/Models/<key>.fbx` + `_broken` 变体:
+            //        火的两态正好是 Bonfire_Fire / Bonfire)。⚠ **围墙例外,仍然用灰盒长条** ——
+            //        菜单⑤ 量出来 `wall.fbx` 是 2×1.1×0.8、`wall_broken.fbx` 是 4×4×1,而我们要的是
+            //        **7 米长、0.9 米高的一条**;按最长边归一会把"破损的那块"变成 7 米高的巨墙。
+            //        一段一段拼栅栏属于 §11-53 的布局轮,不在这里顺手做。
+            // v0.65(用户:"**复用放大**"):信号档 **没有自己的模型** ⇒ 它复用 篝火 那一套(两态都是),
+            //        尺寸吃它自己那一格的身量(2.4 vs 篝火的 1.7 ⇒ `PlaceModel` 按最长边归一,所以就是"同一堆柴垒大一圈")。
+            //        ⚠ 走的是 **modelKey** 这一个参数,不是把 `structures` 的 key 改掉 ——
+            //          账上两档仍然是两个 key(免检那条要单独认信号档),画面上共用一个模型。
+            var go = PropAt(pos, label, shape, col, onClick, scale, scale.y * 0.5f, null, null,
+                            FireModelKey(key == Database.Wall ? null : key), !S.HasStructure(key));
+            props.Add(go);
+            // v0.49:把这块建筑 **交回调用方** —— 两件火要在自己身上挂一盏灯,而灯必须挂在物体下面
+            //        (物体每轮重建,灯跟着一起消失才不用另管一张清理名单)。
+            return go;
         }
+        // v0.65:两档火共用 篝火 的那套模型(信号档没自己的模型)。**一个函数管两处**:
+        //   灶块走 `PropAt(modelKey)`,而"有没有真模型"决定还要不要压那根灰盒火苗胶囊。
+        static string FireModelKey(string structureKey)
+        {
+            if (structureKey == Database.SignalFire) return Database.Campfire;
+            return structureKey;
+        }
+
         static readonly Color BrokenStructureColor = new Color(0.30f, 0.12f, 0.11f, 1f);   // 与 World.ItemMat 的破损色同一支
         static readonly Color FireBurningColor = new Color(1f, 0.62f, 0.16f, 1f);
+
+        // v0.50(用户:"6.队友在夜晚呈现躺下的状态"):夜里把他放平,白天照旧站着。
+        //   ⚠ **只能在 `PlaceModel` 量完尺寸、贴好底面之后再转** —— 转完包围盒整个变了(站着是一根竖条、
+        //     躺下是一片横条),所以这里转完重新贴一次地面,不然一半身子埋进沙里
+        //     (与"全都陷进沙里"那次同一个道理:凡是先摆后转,转完必须重新对一次底面)。
+        //   ⚠ 只能 **右乘**(`rotation *= Euler`),不能赋值 —— 红线 72 那条 FBX 朝向修正还在身上。
+        // v0.50(用户:"5.搜寻飞机能加入远方的动画吗"):那一晚天际线上横穿过去的 **一架几何体剪影**。
+        //   ⚠ 按 §11-82 的定案,飞机 **保持几何体剪影**(主源没有客机模型,也不为此引入新包)⇒ 三块压扁的方块:
+        //     机身 + 两翼 + 尾翼。它 **不可点**(没有 collider、没有名字、没有 onClick)⇒ 不会抢任何落点,
+        //     也不会违反红线 60("往已有夜晚落点上摆东西之前先问这一下归谁" —— 它在 12 米外的高空,不在任何锚点上)。
+        //   移动本身在 `DistantFlyby`(与 `GlowLight` 同一类:自己管自己,阶段不每帧过问)。
+        GameObject DistantPlane(Transform parent)
+        {
+            var body = new GameObject("DistantPlane");
+            body.transform.SetParent(parent, false);
+            var fly = body.AddComponent<DistantFlyby>();
+            fly.height = 6f; fly.seconds = 14f;
+            // 起手就摆在航线上:`Update` 要到下一帧才跑,不写这一行的话它有一帧停在岛的原点(看着像"飞机从营地飞出来")
+            body.transform.localPosition = new Vector3(fly.fromX, fly.height, fly.depth);
+            var dark = World.Mat(new Color(0.10f, 0.11f, 0.14f));
+            Cube(body.transform, "Fuselage", new Vector3(0f, 0f, 0f), new Vector3(1.5f, 0.16f, 0.18f), dark);
+            Cube(body.transform, "Wing", new Vector3(-0.1f, 0f, 0f), new Vector3(0.34f, 0.06f, 1.9f), dark);
+            Cube(body.transform, "Tail", new Vector3(0.62f, 0.1f, 0f), new Vector3(0.2f, 0.24f, 0.06f), dark);
+            return body;
+        }
+
+        static void Cube(Transform parent, string name, Vector3 local, Vector3 scale, Material m)
+        {
+            var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            g.name = name;
+            g.transform.SetParent(parent, false);
+            g.transform.localPosition = local;
+            g.transform.localScale = scale;
+            g.GetComponent<Renderer>().sharedMaterial = m;
+            UnityEngine.Object.Destroy(g.GetComponent<Collider>());      // 运行时这一侧用 Destroy(不是 Immediate)
+        }
+
+        void LayDown(GameObject go)
+        {
+            if (go == null) return;
+            go.transform.rotation *= Quaternion.Euler(-90f, 0f, 0f);
+            Vector3 mn, mx;
+            if (World.WorldAABB(go, out mn, out mx))
+                go.transform.position += new Vector3(0f, 0.02f - mn.y, 0f);
+        }
 
         PrimitiveType PropShape(ItemSO k)
         {
@@ -614,8 +919,29 @@ namespace SixtySLike
             int n = st != null && st.propSlots.Count > 0 ? st.propSlots.Count : 1;
             int idx = ItemTableIndex(k);
             if (idx < 0) idx = StableHash(k.key);
+            // v0.50(用户:"3.潜水装置和巧克力棒换个位置"):**只换这两件**,别的格子一张都不动。
+            //   放在"序号已经算完"之后做对调 ⇒ 它不依赖这两件在表里排第几,以后表序变了仍然是"这两个互换"。
+            else if (k == DB.DiveGear) idx = ItemTableIndex(DB.Chocolate);
+            else if (k == DB.Chocolate) idx = ItemTableIndex(DB.DiveGear);
             idx %= n;
             return idx < 0 ? idx + n : idx;      // 哈希可能是负数,别把负数喂给 Slot()
+        }
+
+        // v0.52(用户:"钓鱼竿反了…可以直接放在海边吗" → 定案「**挪到海边,那一格空着**」)
+        //   ⇒ 钓竿 是 22 件里 **唯一** 不在道具格里的一件,而且它必须 **在水线边**。
+        // v0.57(用户:"荒岛建模为一个岛,周围全是海" + 「**现有东西全不动**」)
+        //   ⇒ 落点 **不再从 `seaAnchor` 推偏移**,改成直接从岸线推:岛一成形,浪线就不是"旧海那条带的边缘"了,
+        //     任何写死的 z 都会漂。现在这条只有一个出处 `IslandTerrain.WaterR`,岛改多大它自己跟着走
+        //     —— 与 v0.52 那条"以后谁挪大海,钓竿跟着走"是同一个意图,只是"大海"现在由岛形决定。
+        //   数:`WaterR` 往里 0.9 米(还在 `WalkR` 之内 ⇒ 自由视角走得到、E 够得着),x 偏 +3.5 米
+        //     ⇒ 与 大海 那块可点板错开,竿子不插在板中间;取 **-z 那一侧** 是因为固定镜头里海就在那边。
+        //   ⚠ `DemoChecks.V052()` / `V057()` 盯这个点(它没有道具格兜着,没人盯着就会漂)。
+        public static Vector3 RodSeaPos()
+        {
+            float r = IslandTerrain.WaterR - 0.9f;
+            float x = 3.5f;
+            return new Vector3(IslandTerrain.Center.x + x, 0f,
+                               IslandTerrain.Center.y - Mathf.Sqrt(Mathf.Max(0.01f, r * r - x * x)));
         }
 
         // 先按 §5.1 拾荒池的表序,再按 §6 制作表的表序 —— 两份都是资产里写死的顺序。
@@ -649,21 +975,55 @@ namespace SixtySLike
         // 那条路在本项目里是被验证过"读得通"的,而 LabelFlat 的左右手序我连着猜错两次。
         // 相机是固定的,所以 billboard 与"印在面上"在这一层看起来完全一样。
         GameObject PropAt(Vector3 groundPos, string name, PrimitiveType shape, Color c, Action onClick,
-                          Vector3 scale, float lift, Material mat = null, string hover = null)
+                          Vector3 scale, float lift, Material mat = null, string hover = null,
+                          string modelKey = null, bool brokenLook = false, Vector3 modelSize = default(Vector3))
         {
-            var go = mat != null
-                ? World.Primitive(shape, name, groundPos + Vector3.up * lift, scale, mat,
-                                  root.islandStage.transform, null, onClick != null)
-                : World.Primitive(shape, name, groundPos + Vector3.up * lift, scale, c,
-                                  root.islandStage.transform, null, onClick != null);
+            // v0.49:名字牌改成"悬浮才出现"⇒ **能悬浮才看得到名字**。
+            //   原来 collider 只在"可点"时才给,于是 围墙 这类不可点的物件根本没得悬浮,牌子会永久看不见
+            //   ⇒ 带牌子(或有悬浮信息)的物件一律要 collider。点击行为不变:onClick 为空时点了什么都不做。
+            bool hoverable = onClick != null || !string.IsNullOrEmpty(hover) || !string.IsNullOrEmpty(name);
+            var foot = groundPos + Vector3.up * lift;
+            // v0.49(用户:"放手去做吧"):先试真模型(`Assets/Resources/Models/<key>.fbx`),没有就退回灰盒方块。
+            //   ⇒ 这一步是**纯增量**:没装模型的东西照旧是那块方块,不会"看不见"也不会点不到。
+            //   破损/熄灭态若没有专门模型,就把灰盒那套暗红压在模型上(调用方传进来的 `mat` 正是 `World.ItemMat(k, broken)`)。
+            //   ⚠ 对齐方式不同:方块给的是 **中心** (`foot`),模型按 **底面** 落在 `groundPos` 的高度上 ——
+            //     这样"原来那块方块的底在哪,模型的脚就在哪",换真模型不会让东西飘起来或陷进沙里。
+            var go = string.IsNullOrEmpty(modelKey) ? null
+                    : World.PlaceModel(root.islandStage.transform, modelKey, brokenLook, groundPos,
+                        // `modelSize` 只在"模型与方块的比例不一样"时才传(例:队友那颗胶囊是 0.9 宽 / 1.8 高,
+                        //  而模型要按 **身高 1.8** 归一,否则人会被压成 0.9 高 —— 菜单⑤ 的数就是这么暴露的)
+                        modelSize.sqrMagnitude > 0.0001f ? modelSize : scale,
+                        // v0.53:**没有专门破损模型 或 这个模型本身没有材质** ⇒ 两种情况都要把 `World.ItemMat` 压上去。
+                        //   后一半是渔网教出来的:它整包 `Material` 记录为 0,以前只压破损态,完好态就成了 Unity 内置白模,
+                        //   而 v0.37 那条"完好/破损由材质说话"是唯一还在表达"这件能不能用"的渠道。
+                        (brokenLook && !World.HasBrokenModel(modelKey)) || !World.ModelHasMaterial(modelKey, brokenLook)
+                            ? mat : null,
+                        // v0.50(用户:"毯子 1:1:1 / 钓竿 100:100:100 / 鱼叉 25:25:25",读法 = **倍率,100=原尺寸**):
+                        //   **只有这一层**允许 `World.NativeRatio` 那几件按模型原尺寸摆。
+                        //   机舱那层(`ScavengingPhase.AddPickup`)不传 ⇒ 2.68 米的钓竿不会在 2.5 米过道里横穿两头。
+                        true);
+            bool modeled = go != null;
+            if (!modeled && modelKey == "net")
+                // v0.51(用户:"渔网的模型仍然是个球?"):库里没有渔网模型 ⇒ 退回灰盒时不再摆那颗球,
+                //   改成 **几何体拼的一张网**(两向交叉绳 + 一圈浮子)。真模型哪天放进 `Resources/Models/net.fbx`
+                //   就走上面那条 `PlaceModel`,这一支自动不再触发。
+                go = World.Net(root.islandStage.transform, name, foot, scale.x, mat != null ? mat : World.Mat(c));
+            else if (!modeled)
+                go = mat != null
+                    ? World.Primitive(shape, name, foot, scale, mat, root.islandStage.transform, null, hoverable)
+                    : World.Primitive(shape, name, foot, scale, c, root.islandStage.transform, null, hoverable);
             TextMesh tm = null;
             if (!string.IsNullOrEmpty(name))
             {
-                var at = go.transform.position + Vector3.up * (scale.y * 0.28f)
-                         + FaceToCam(go.transform.position) * (Mathf.Max(scale.x, scale.z) * 0.5f + World.LabelGap);
+                // 牌子高度按**实际顶面**算(模型有高有矮,不能再按方块尺寸猜);水平方向仍朝相机那一侧让开一点。
+                var top = new Vector3(go.transform.position.x,
+                                      modeled ? World.TopOf(go) : go.transform.position.y + scale.y * 0.28f,
+                                      go.transform.position.z);
+                var at = top + FaceToCam(go.transform.position) * (Mathf.Max(scale.x, scale.z) * 0.5f + World.LabelGap);
                 tm = World.LabelAt(go.transform, name, at, 0.14f, Color.white, TextAnchor.MiddleCenter);
+                tm.gameObject.SetActive(false);      // v0.49:平时收着,鼠标碰到这块物件才亮出名字
             }
-            if (onClick != null || !string.IsNullOrEmpty(hover))
+            if (hoverable)
             {
                 var p = go.AddComponent<IslandProp>();
                 p.onClick = onClick;
@@ -688,6 +1048,17 @@ namespace SixtySLike
         {
             string act; Action run;
             if (!TryBind(k, out act, out run)) return;
+            // v0.64(用户:"**物品损坏后白天也不能使用,检查一下逻辑**"):点一件东西 = 用 **这一件**(v0.45 定的),
+            //   所以第一道闸必须落在这件自己身上。原来只有下面那道 `CanDo(行动)` 的闸,而它的判据是
+            //   "这件事能不能做"(潜水 = 潜水装置 / 鱼叉 / 浮镜 **任一**完好)⇒ 漏出一条路:
+            //   拿着完好的潜水装置、去点那把 **坏掉的鱼叉**,闸门放行、3 点精力照扣、产出照算,等于用坏东西下了水。
+            //   ⚠ 这条闸只管"绑定了白天行动的那几件"(TryBind 已经过了):材料/毯子/渔网 这类本来就"点了什么都不发生",
+            //     不给它们新增出口(全局口径:不为到不了的状态补渠道)。
+            if (!S.storage.Has(k, 1))
+            {
+                S.Log(k.displayName + " 是坏的 —— 白天也用不了,先在维修面板里修好它。");
+                return;
+            }
             var a = Act(act);
             string why;
             if (a != null && !CanDo(a, out why)) { S.Log(k.displayName + ":" + why); return; }
@@ -721,7 +1092,7 @@ namespace SixtySLike
         {
             S.storage.Remove(DB.Can, 1);
             S.stats.fullness = Mathf.Clamp01(S.stats.fullness + B.foodPerCanFullness);
-            S.Log("吃了 1 份罐头(+" + Mathf.RoundToInt(B.foodPerCanFullness * 100) + "% 饱食)。");
+            S.Log("吃了 1 份罐头(+" + Mathf.RoundToInt(B.foodPerCanFullness * 100) + "% 饱食)。");   // 允许:收益百分比,不是概率
             D("eat");
         }
 
@@ -962,7 +1333,7 @@ namespace SixtySLike
             return a.costAllRemaining ? "吃掉全部剩余精力" : (a.cost > 0 ? "消耗 " + a.cost + " 点精力" : "0 精力");
         }
 
-        static string Pct(float v) { return Mathf.RoundToInt(v * 100) + "%"; }
+        static string Pct(float v) { return Mathf.RoundToInt(v * 100) + "%"; }   // 允许:百分比格式化器本身(它只被 饱食/罐头 这类 **状态数值** 用,v0.66 之后概率一律不进文案)
         public static string MoodName(MoodLevel m)
         {
             switch (m) { case MoodLevel.Good: return "良好"; case MoodLevel.Lonely: return "孤独"; case MoodLevel.Depressed: return "沮丧"; default: return "崩溃"; }
@@ -1157,15 +1528,14 @@ namespace SixtySLike
             }
             else
             {
-                S.Log("钓鱼:空军(第 " + S.day + " 天上鱼率 " + Mathf.RoundToInt(catchP * 100) + "%"
-                      + (baited ? ",挂了鱼饵" : "") + ")。");
+                S.Log("钓鱼:空军" + (baited ? "(挂了鱼饵)" : "") + "。");
                 D("fishmiss");
             }
 
             if (S.rng.NextDouble() < B.keyChanceFish && !S.hidden.hasKey)
             {
                 S.hidden.hasKey = true; S.storage.Add(DB.Key, 1);
-                S.Log("鱼肚子里有一颗 宝藏钥匙(5%,不需要藏宝图)。");
+                S.Log("鱼肚子里有一颗 宝藏钥匙(不需要藏宝图)。");
             }
             LoreRoll("fish");
             Wear(DB.FishingRod);
@@ -1185,14 +1555,14 @@ namespace SixtySLike
             if (food > 0) S.storage.Add(DB.Can, food);
             if (bait > 0) S.storage.Add(DB.Bait, bait);
             S.Log("带着 " + tool.displayName + " 下水:罐头 +" + food + "、鱼饵 +" + bait
-                  + (full ? "" : "(非潜水装置:概率减半)"));
+                  + (full ? "" : "(不是潜水装置:这一档捞得少)"));
             D("dive", Sum(food, "份罐头", bait, "份鱼饵", 0, ""));
 
             if (!NavigatorActive() && S.rng.NextDouble() < B.diveInjuryChance) Damage(1, "潜水受伤");
             if (S.rng.NextDouble() < B.keyChanceDive && !S.hidden.hasKey)
             {
                 S.hidden.hasKey = true; S.storage.Add(DB.Key, 1);
-                S.Log("礁缝里摸到了 宝藏钥匙(15%,不需要藏宝图)。");
+                S.Log("礁缝里摸到了 宝藏钥匙(不需要藏宝图)。");
             }
             Wear(tool);
         }
@@ -1253,8 +1623,8 @@ namespace SixtySLike
             // ⚠ 幽灵船那条骰要 丢满 2 个瓶子 才开(§4.6)—— 第 1 个瓶子只打开轮船线,日志必须照实说
             S.Log("把漂流瓶扔进了海里(已丢 " + S.bottle.thrownBottles + " 个)。"
                   + (S.bottle.thrownBottles >= 2
-                        ? "今晚起:轮船与幽灵船各掷各的独立 20%。"
-                        : "今晚起每晚独立 20% 只掷 轮船 —— 再丢第 2 个瓶子才会另外开出 幽灵船(结局H)。"));
+                        ? "今晚起:轮船与幽灵船 两条线各自在掷,互不顶替。"
+                        : "今晚起每晚只掷 轮船 —— 再丢第 2 个瓶子才会另外开出 幽灵船(结局H)。"));
             D("throwbottle");
         }
 
@@ -1268,7 +1638,7 @@ namespace SixtySLike
             if (S.rng.NextDouble() < p)
             {
                 S.storage.MarkBroken(t);
-                S.Log(t.displayName + " 坏了(这一掷 " + Mathf.RoundToInt(p * 100) + "%)。修理:" + RepairLabel(t));
+                S.Log(t.displayName + " 坏了 —— 修理:" + RepairLabel(t));
             }
         }
 
@@ -1297,7 +1667,7 @@ namespace SixtySLike
             if (S.rng.NextDouble() < p)
             {
                 S.MarkStructureBroken(key);
-                S.Log(StructureName(key) + " 被这一晚撞裂了(这一掷 " + Mathf.RoundToInt(p * 100) + "%)—— 它现在挡不住东西了。白天可以修:" + RepairLabel(key));
+                S.Log(StructureName(key) + " 被这一晚撞裂了 —— 它现在挡不住东西了。白天可以修:" + RepairLabel(key));
             }
         }
 
@@ -1384,7 +1754,7 @@ namespace SixtySLike
                 //        消耗品(鱼饵/自制药品/土制信号弹/土制打火石)不会破损,也不受这条约束。
                 // v0.46:建筑读的是"**建过没有**"而不是"还好不好" —— 围墙坏了也不该重新出现"再花 5 材料建一座",
                 //        它走下面的修理段(材料3 + 1 体力)。这与工具那条口径完全一致。
-                if (r.isStructure && S.structures.Contains(r.resultStructure)) continue;
+                if (r.isStructure && S.StructureEverBuilt(r.resultStructure)) continue;
                 if (r.resultItem != null && !r.resultItem.consumable && S.storage.Count(r.resultItem) > 0) continue;
                 string why;
                 bool can = CanCraft(r, out why);
@@ -1423,7 +1793,7 @@ namespace SixtySLike
                         S.storage.Unbreak(it);
                         var t = it as ToolSO;
                         if (t != null) wear[t] = Mathf.Max(0.2f, ToolBreakChanceNow(t) * 0.5f);
-                        S.Log("修好了 " + it.displayName + "(损坏概率减半,不低于 20%)。");
+                        S.Log("修好了 " + it.displayName + "(它没那么容易再坏了)。");
                         D("repair");
                     });
                 }
@@ -1458,7 +1828,7 @@ namespace SixtySLike
                         Spend(s3);
                         S.RepairStructure(sk);
                         wearStruct[sk] = Mathf.Max(0.2f, StructBreakChance(sk) * 0.5f);   // 与工具同一句"修一次缓一段"
-                        S.Log("把 " + StructureName(sk) + " 重新垒好了(下次损坏概率减半,不低于 20%)。");
+                        S.Log("把 " + StructureName(sk) + " 重新垒好了(下次没那么容易再坏)。");
                         D("repair");
                     });
                 }
@@ -1488,7 +1858,9 @@ namespace SixtySLike
             if (!string.IsNullOrEmpty(r.requiresStructure) && !S.structures.Contains(r.requiresStructure))
             { why = "需要先建 " + StructureName(r.requiresStructure); return false; }
             if (r.oncePerRun && S.craftedThisRun.Contains(r.key)) { why = "每局限做 1 次"; return false; }
-            if (r.isStructure && S.structures.Contains(r.resultStructure)) { why = "已经建好了"; return false; }
+            // v0.64:判据走 `StructureEverBuilt`(连着上下档一起看)⇒ 一摊火升格成 信号火堆 之后,
+            //        「垒 篝火」这一手不会再出现,更不可能花 3 材料把它 **降级回去**。
+            if (r.isStructure && S.StructureEverBuilt(r.resultStructure)) { why = "已经建好了"; return false; }
             // v0.28:净水器 与它那道"先建集水器"的前置一起删除 ⇒ 制造重新回到"没有任何前置"这条规则上。
             // 下面几条都是要被吃掉的价,不是门槛。
             if (r.consumesFlint && !Usable(DB.Flint) && !S.storage.Has(DB.CrudeFlint)) { why = "缺 打火石(或 土制打火石)"; return false; }
@@ -1513,15 +1885,27 @@ namespace SixtySLike
             //        火种改由 **点燃** 时消耗(见 LightCampfire / LightSignalFire),不再是造的时候吃掉。
             if (r.isStructure)
             {
+                // v0.64:升级那一刻的话要说在 **建之前** 那句里 —— `S.Build(SignalFire)` 会把 篝火 那一档退场,
+                //        之后再问"有没有篝火"就永远是 false 了。
+                bool upgradedFire = r.resultStructure == Database.SignalFire && S.structures.Contains(Database.Campfire);
                 S.Build(r.resultStructure);
                 // v0.48(用户:"篝火不用点,存在则那几条分支都直接走"):**建造那一手 = 点燃**。
                 //   `consumesFlint` 因此回来了,但含义换了:它不再是"造一件只值一晚的临时火",
                 //   而是"这座灶建好即点着、从今晚起烧两晚"。熄灭之后要再点,走维修面板那一行(0 材料 0 精力 + 火种)。
-                if (r.consumesFlint)
+                // v0.65(用户:"**升级免火种**"):信号档这一手是"把那一堆柴垒高",不是"再点一次火"
+                //   ⇒ `consumesFlint` 关掉,但 **照样当场点着**(你上一轮选的「升级 = 重新点燃(补满两晚)」不变)。
+                //   ⚠ 这里没有去改 v0.48 那条统一模型("刚建好的火 = 灭着,靠 Relight 点着"),
+                //     而是显式多给这一手一次 Relight —— 否则两档的"建好即着"就变成两套规则了。
+                //   ⚠ 连带(是一次性的,不是后门):**火灭着且手上没火种** 的那一晚,可以花 材料6 把它直接垒成信号档来复活;
+                //     但账上升格只可能发生一次(升完 campfire 就退场了),之后熄灭仍然只能靠一块火种。
+                bool litNow = r.consumesFlint || upgradedFire;
+                if (litNow)
                 {
                     S.Relight(r.resultStructure);
+                    if (upgradedFire)
+                        S.Log("营地里那堆 篝火 垒高成了 信号火堆 —— 仍是那一格、那一堆,不并排两摊。");
                     S.Log("建好了 " + r.displayName + ",并且当场点着(烧 " + RunState.FireNightsPerLighting
-                          + " 个晚上,点燃当天算第 1 晚)。" + LightFireStarter());
+                          + " 个晚上,点燃当天算第 1 晚)。" + (r.consumesFlint ? LightFireStarter() : "这一手是垒高,不吃火种。"));
                     return;
                 }
                 S.Log("建好了 " + r.displayName + "。");
@@ -1558,9 +1942,12 @@ namespace SixtySLike
         public static bool IsFireStructure(string key) { return Database.IsFireStructure(key); }
 
         // 白天点那两块灶:**没有"点"这个动作了**,只告诉你它的状态与去哪儿修(夜晚的点击归 target "fire",见 StructureProp)
+        // v0.65(用户:"**不要显示剩余晚数**"):这里原来报"还剩几个晚上",摘掉 —— **数值账一条没动**
+        //   (烧两晚 / 清晨减一 / 到点自动熄灭 / 免检只在烧着的那几晚),只是不再把倒数写在玩家眼前。
+        //   "着没着"仍然是看得见的:牌子上的「熄了」、火苗与那盏灯、破损暗红。
         void FireInfo(string name, string key)
         {
-            if (S.HasStructure(key)) S.Log(name + " 正烧着(还剩 " + S.NightsLeft(key) + " 个晚上),不用管它。");
+            if (S.HasStructure(key)) S.Log(name + " 正烧着,不用管它。");
             else if (IsFireStructure(key)) S.Log(name + " 熄了 —— 在 制造/维修 面板里「重新点燃」那一行,只花一块火种。");
         }
         void FireInfoCampfire() { FireInfo("篝火", Database.Campfire); }
@@ -1590,7 +1977,6 @@ namespace SixtySLike
                 D("heal");
             }
             else { S.Log(name + " 失败了 —— 药照样消耗掉了。"); D("healfail"); }
-            healedToday = true;
         }
 
         // §5.3/§5.4 彩蛋层的唯一入口。两条硬规则写死在这里:
@@ -1628,7 +2014,7 @@ namespace SixtySLike
             var list = new List<ItemSO>();
             foreach (var kv in S.storage.ok)
             {
-                if (kv.Key.lore) continue;      // 暗线道具不给猴子/事故(§3.4)
+                if (kv.Key.lore) continue;      // 暗线道具不给狐狸/事故(§3.4)
                 for (int i = 0; i < kv.Value; i++) list.Add(kv.Key);
             }
             if (list.Count == 0) return null;
@@ -1658,6 +2044,9 @@ namespace SixtySLike
                 nightLine = "沙丘上那道火柱替你答了这一晚 —— 不需要你再动手。";
             }
             SetNightLook(true);
+            // v0.49(用户:"夜晚根据事件的不同选择合适的bgm"):表在 `Music.Spooky` 那一处 ——
+            //   按 **事件 key** 选,而不是再写一份"哪几个事件算阴森"的名单:同一张表只有一个出处。
+            Music.Night(NightResolver.Current != null ? NightResolver.Current.key : null);
             Refresh();
         }
 
@@ -1708,6 +2097,7 @@ namespace SixtySLike
             night = false; nightDone = false; nightLine = null;
             NightResolver.End();
             SetNightLook(false);
+            Music.Day(S.day);       // v0.49(用户:"生存阶段的音乐要平静旷远,有海边的感觉")—— 按天在两首轮换
             root.ClearModal();
             if (S.stats.hp <= 0) { root.EndRun(EndingResolver.DeathEnding(S)); return; }
             if (S.gull.presentCount >= B.gullEndingCount) { root.EndRun(EndingId.I); return; }
@@ -1723,11 +2113,37 @@ namespace SixtySLike
         void SetNightLook(bool on)
         {
             if (root.sun != null) root.sun.intensity = on ? 0.06f : 1.0f;
+            // v0.49(用户:"灯光系统在篝火和手电筒再加一下(二者的光)"):夜里得 **真的暗下来**,那两盏火才有意义。
+            //   ⚠ 白天 **一个数都不改** —— 场景里环境光是 Skybox 模式,那个观感是验收过的;
+            //     只在入夜时切成 Flat 的一支冷蓝,天亮原样交回,所以这条改动在白天完全看不出来。
+            //     留一层月光(不是纯黑):夜晚仍然要在沙滩上点到东西 —— "每个选择都有可点的落点"是红线。
+            //     觉得夜太亮/太暗就只改 NightAmbientColor 这一支。
+            if (!dayAmbientSaved)
+            {
+                dayAmbientMode = RenderSettings.ambientMode;
+                dayAmbientColor = RenderSettings.ambientLight;
+                dayAmbientSaved = true;
+            }
+            if (on)
+            {
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+                RenderSettings.ambientLight = NightAmbientColor;
+            }
+            else
+            {
+                RenderSettings.ambientMode = dayAmbientMode;
+                RenderSettings.ambientLight = dayAmbientColor;
+            }
             // 白天的清屏色直接就是天空蓝:就算那块天空板因为材质/光照没画出来,
             // 屏幕也不会变成"看不见东西"的黑底 —— 相机的背景本身就是天。
             if (root.cam != null) root.cam.backgroundColor = on ? new Color(0.02f, 0.03f, 0.07f)
                                                                 : new Color(0.55f, 0.78f, 0.95f);
         }
+
+        UnityEngine.Rendering.AmbientMode dayAmbientMode;
+        Color dayAmbientColor;
+        bool dayAmbientSaved;
+        static readonly Color NightAmbientColor = new Color(0.13f, 0.16f, 0.23f);
 
         // 进荒岛 0.4 秒后打一条镜头诊断:看向谁 + 视锥里有多少可见 Renderer。
         // 灰盒阶段这类"画面不对"的问题,靠猜不如靠这一行。
@@ -1740,9 +2156,14 @@ namespace SixtySLike
             diagDone = true;
             var ray = root.cam.ViewportPointToRay(new Vector3(0.5f, 0.3f, 0f));
             RaycastHit h;
-            string hit = Physics.Raycast(ray, out h, 400f)
+            bool got = Physics.Raycast(ray, out h, 400f);
+            string hit = got
                 ? h.collider.name + " @" + h.distance.ToString("F1") + "m"
                 : "这条视线 400 米内什么都没打到";
+            // v0.49(用户:"4.诊断有debug.log就行了(能加上也行)" ⇒ 加上了):同一条视线在 **Scene 视图** 里画出来。
+            //   ⚠ 它是给**我们**看的,不是给玩家的 —— 所以不进任何 HUD、任何文案,Game 视图里也看不见。
+            //   duration 给 6 秒:这条诊断只在进荒岛 0.4 秒后跑一次,给 0 就是一闪、切过去看已经没了。
+            Debug.DrawRay(ray.origin, ray.direction * (got ? h.distance : 60f), Color.cyan, 6f);
             int visible = 0;
             foreach (var r in FindObjectsOfType<Renderer>())
                 if (r != null && r.enabled && r.gameObject.activeInHierarchy && r.bounds.IntersectRay(ray)) visible++;
@@ -1766,7 +2187,7 @@ namespace SixtySLike
                      new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -46), new Vector2(0, -12));
             string desc = NightResolver.Calm ? "" : ev.description;
             if (ev == DB.MonkeyNaughty && NightResolver.StolenName != null) desc += "(它抢走的是:" + NightResolver.StolenName + ")";
-            // v0.33:友善的猴子 也要把"换出哪件 / 换入哪件"写在屏幕上(这一对在本晚摊开时就已经定好,
+            // v0.33:友善的狐狸 也要把"换出哪件 / 换入哪件"写在屏幕上(这一对在本晚摊开时就已经定好,
             //        点"交易"只是执行它 —— 见 NightResolver.PickTrade)
             if (ev == DB.MonkeyFriendly && NightResolver.TradeGiveName != null)
                 desc += "(它想收走你的:" + NightResolver.TradeGiveName + " —— 换给你:"
@@ -1816,7 +2237,7 @@ namespace SixtySLike
             string title = target == "fire" ? "篝火" : target == "sea" ? "大海"
                          : target == "mate" ? (S.mate.present ? S.mate.who.displayName : "队友")
                          : target == "bones" ? "沙里露出来的那具尸骨"
-                         : target == "monkey" ? "那只猴子" : "营地";
+                         : target == "monkey" ? "那只狐狸" : "营地";
             NightMenu(title, NightResolver.ChoicesByTarget(target), extraLabel, extraAct, true);
         }
 

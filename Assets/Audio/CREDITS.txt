@@ -1,0 +1,27 @@
+音乐素材出处与署名(台账:许可依据 / 直链 / 每首用途;逐首的 feel 与文件名都记在这里)
+⚠ 游戏内**玩家看到的那份署名文本只有一个出处:`Assets/Resources/Text/Credits.txt`**(主菜单「致谢」读它)。
+   这份台账不要再抄一遍那段串 —— 抄两处就会不同步(2026-10-07 起,自检 V067 ③ 盯着这件事)。
+
+来源:Incompetech — Kevin MacLeod,https://incompetech.com
+目录数据:music/royalty-free/pieces.json(机器可读曲库,1443 首)
+音频直链:music/royalty-free/mp3-royaltyfree/<文件名>
+许可:CC BY 4.0(Creative Commons Attribution 4.0 International)—— 可商用,须署名。
+下载日期:2026-10-01
+
+本目录只留这份说明;六首 mp3 已挪到 `Assets/Resources/Audio/`(运行时按文件名 `Resources.Load<AudioClip>("Audio/<名字>")` 取,
+与模型那一条同一个约定 `Resources/Models/<key>.fbx`;文件名里的空格换成了下划线)。
+
+Resources/Audio 内文件与用途(§11-83 ⑨ 那张表的三档):
+  Feral_Chase.mp3        拾荒阶段(紧张)67s   feel: Action, Driving, Suspense
+  Division.mp3           拾荒阶段(紧张)66s   feel: Dark, Driving, Intense
+  Gymnopedie_No_3.mp3    生存阶段(平静)145s  feel: Calming, Mysterious
+  Enchanted_Valley.mp3   生存阶段(平静)190s  feel: Relaxed, Mystical
+  MeasuredPaces.mp3      夜晚事件(默认那一首)73s  feel: Unnerving, Mysterious, Eerie
+  Ghost_Dance.mp3        夜晚"超自然/死亡意象"那一组:shadow / smallshadow / bones / ghostship /
+                         ship / bloodmoon / fakemate / twolights    73s  feel: Dark, Epic, Mysterious
+
+游戏内 / 页面 credits 需出现的署名文本(每条一首,合并写成一段即可):
+  Music: "Feral Chase", "Division", "Gymnopedie No 3", "Enchanted Valley",
+  "MeasuredPaces", "Ghost Dance" by Kevin MacLeod (incompetech.com),
+  licensed under Creative Commons: By Attribution 4.0
+  http://creativecommons.org/licenses/by/4.0/

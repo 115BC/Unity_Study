@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: coconut
   displayName: "\u6930\u5B50"
-  desc: "\u8017 1 \u4F53\u529B\u6253\u5F00:\u56DE\u6EE1\u9971\u98DF + 1 \u751F\u547D\u3002v0.28:\u63A2\u7D22\u8352\u5C9B \u4E0D\u518D\u4EA7\u5B83,\u5B83\u552F\u4E00\u7684\u6765\u6E90\u662F\u591C\u665A\u4E8B\u4EF6\u300C\u6930\u6811\u300D(\u8D70\u8FC7\u53BB\u62FF,30% \u88AB\u6930\u5B50\u7838 -1 \u751F\u547D)\u3002"
+  desc: "\u8017 1 \u4F53\u529B\u6253\u5F00:\u56DE\u6EE1\u9971\u98DF + 1 \u751F\u547D\u3002v0.28:\u63A2\u7D22\u8352\u5C9B
+    \u4E0D\u518D\u4EA7\u5B83,\u5B83\u552F\u4E00\u7684\u6765\u6E90\u662F\u591C\u665A\u4E8B\u4EF6\u300C\u6930\u6811\u300D(\u8D70\u8FC7\u53BB\u62FF,30%
+    \u88AB\u6930\u5B50\u7838 -1 \u751F\u547D)\u3002"
   slots: 1
   cabinMin: 0
   cabinMax: 0
@@ -25,10 +27,7 @@ MonoBehaviour:
   lore: 0
   indestructible: 0
   fullnessRestore: 100
-  hydrationRestore: 0
   staminaRestore: 0
   hpRestore: 1
   curesSickness: 0
-  makesSick: 0
   medicineSuccessChance: 1
-  baitMissReduction: 0

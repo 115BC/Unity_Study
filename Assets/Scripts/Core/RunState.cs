@@ -35,7 +35,7 @@ namespace SixtySLike
         public void MarkBroken(ItemSO i)
         {
             // §2.3:只有"会坏的工具"进得了破损态。钓竿/手电筒 是 indestructible,
-            // 消耗品与图鉴杂物根本不是 ToolSO —— 猴子抢回它们时"没有破损这回事"。
+            // 消耗品与图鉴杂物根本不是 ToolSO —— 狐狸抢回它们时"没有破损这回事"。
             if (i == null || i.indestructible || !(i is ToolSO)) return;
             // v0.45(用户):一件东西只有两种状态 —— 坏了就是整堆坏,不会出现"还剩一把能用、
             //        另一把躺在维修面板里"那种同时存在两态的情况。
@@ -88,12 +88,17 @@ namespace SixtySLike
         public int hungerDaysSinceMeal;
         public bool skillOfferedToday;      // 40% 命中后挂"待触发",交流才发动
         public bool skillActiveToday;
+        // v0.52(用户:"队友处于饥荒的当天不会死亡,第二天才会死亡"):进入 饥荒 那一天记下来 = 最后一天期限。
+        //   -1 = 现在不在饥荒里。§2.4 从 v0.10 起写的就是"处于饥荒 **且当天没投喂** → 次日消失",
+        //   以前代码在降进 饥荒 的那个清晨直接判死,玩家从来没有"那一天"可以去喂 ⇒ 是代码与文档不一致。
+        public int famineDay = -1;
 
         public void Reset()
         {
             present = false; who = null; mood = MoodLevel.Good; hunger = HungerLevel.Full;
             sick = false; moodDaysSinceTalk = 0; hungerDaysSinceMeal = 0;
             skillOfferedToday = false; skillActiveToday = false;
+            famineDay = -1;
         }
     }
 
@@ -137,9 +142,9 @@ namespace SixtySLike
         public bool twoLightsSeen;
         public bool shadowNightResolved;
         public bool metShadow;
-        public readonly HashSet<ItemSO> everOwned = new HashSet<ItemSO>();   // 友善猴子货单
+        public readonly HashSet<ItemSO> everOwned = new HashSet<ItemSO>();   // 友善狐狸货单
         public readonly HashSet<ItemSO> loreFound = new HashSet<ItemSO>();   // v0.26:彩蛋"整局只出一次"的那道闸
-        // v0.26:彩蛋层里那三件"前一晚触发、第二天清晨才掷"的(A3 徽章 / B3 救生筏残片 / D1 猴子的回礼)
+        // v0.26:彩蛋层里那三件"前一晚触发、第二天清晨才掷"的(A3 徽章 / B3 救生筏残片 / D1 狐狸的回礼)
         //        在这里登记来源键,清晨由 IslandPhase.MorningTick 排空。它是"延迟标记",不是收集状态。
         public readonly List<string> nextMorningEgg = new List<string>();
     }
@@ -197,6 +202,8 @@ namespace SixtySLike
         const string KeyEndingsSeen = "60slike.endingsSeen";
         const string KeyEggsSeen = "60slike.eggsSeen";
         const string KeyDateMode = "60slike.dateMode";
+        const string KeyName = "60slike.playerName";
+        const string KeyVolume = "60slike.musicVolume";
         public static bool trueEndingClaimed { get { return PlayerPrefs.GetInt(KeyTrueClaimed, 0) == 1; } }
         public static void SetTrueClaimed(bool v) { PlayerPrefs.SetInt(KeyTrueClaimed, v ? 1 : 0); PlayerPrefs.Save(); }
         public static void ResetTrueClaimed() { SetTrueClaimed(false); }
@@ -247,6 +254,16 @@ namespace SixtySLike
         public static int dateMode { get { return PlayerPrefs.GetInt(KeyDateMode, 1); } }
         public static void ToggleDateMode() { PlayerPrefs.SetInt(KeyDateMode, dateMode == 0 ? 1 : 0); PlayerPrefs.Save(); }
         public static string Date(int day) { return dateMode == 0 ? "D" + day : "第 " + day + " 天"; }
+
+        // v0.61(用户:"**开始菜单把姓名,重置结局,日记日期显示均放在设置的子页面里**"):
+        //   姓名从"每局在标题屏现填"改成 **存进设置**(跨局记住)—— 不存的话搬进设置页就等于每局重填,
+        //   比原来还麻烦。空串 = 没填过,开局时 `SanitizeName` 照旧兜成默认名(那条规则一个字没动)。
+        public static string playerName { get { return PlayerPrefs.GetString(KeyName, ""); } }
+        public static void SetPlayerName(string v) { PlayerPrefs.SetString(KeyName, v ?? ""); PlayerPrefs.Save(); }
+
+        // v0.61:音乐音量(设置页里四档循环:关/低/中/高)。存 0~1 的浮点,`Music` 拿它乘淡入淡出的目标值。
+        public static float musicVolume { get { return PlayerPrefs.GetFloat(KeyVolume, 0.7f); } }
+        public static void SetMusicVolume(float v) { PlayerPrefs.SetFloat(KeyVolume, Mathf.Clamp01(v)); PlayerPrefs.Save(); }
     }
 
     public class RunState
@@ -302,7 +319,6 @@ namespace SixtySLike
             if (HasStructure(Database.SignalFire) && --signalFireNights <= 0) Extinguish(Database.SignalFire);
         }
         public bool useBait;                  // v0.18:钓鱼挂不挂鱼饵的开关(每局的态,默认不挂)
-        public bool signalFireUsed;           // ⚠ 死字段:没有任何读者(v0.47 核对);留着是因为删它不在你这次的清单里
         // v0.44:电量从"有/没有"两态改成 **2 格存储**(用户:"手电筒有两点电量存储(开局随机0-2);一份电消耗一点精力充电")。
         //        每局的态,所以它在 RunState 而不是盘上的 FlashlightSO。初值在下面的构造函数里随机 0~2。
         public int flashlightCharge;
@@ -372,8 +388,29 @@ namespace SixtySLike
         public void Build(string k)
         {
             structures.Add(k);
+            // v0.64(用户:"**信号火堆直接替代火堆**" + 定案「**升级替换:篝火建到信号火堆就变成它**」)
+            //   ⇒ **营地里始终只有一摊火**:升到信号档,篝火 那一档就从"建过"与"破损"两本账里退场,
+            //     两档不会并排站在两处(原来的摆法是 篝火 在 fireAnchor、信号火堆 在另一格,那是两摊火)。
+            //     "还剩几晚"按你选的「**升级 = 重新点燃**」:**不继承**剩余晚数 —— 它与任何一次建造一样,
+            //     建好当场点着、烧满 `FireNightsPerLighting` 晚(这一条 v0.48 就是这么定的,所以**没有新账**,
+            //     火种照旧在这一手里吃掉,熄灭了要再点也照旧一块火种)。
+            if (k == Database.SignalFire)
+            {
+                structures.Remove(Database.Campfire);
+                brokenStructures.Remove(Database.Campfire);
+                campfireNights = 0;
+            }
             if (Database.IsFireStructure(k)) brokenStructures.Add(k);
             else brokenStructures.Remove(k);
+        }
+
+        // v0.64:一摊火两档 ⇒ "这一档还算不算已经建过"要 **连着上下档一起看**。
+        //   没有这一条,升级之后 `structures` 里就没有 campfire 了,制造面板会把「垒 篝火(材料3)」重新摆回玩家面前
+        //   —— 那等于允许花 3 材料把一摊 信号火堆 **降级回篝火**。
+        public bool StructureEverBuilt(string k)
+        {
+            if (k == Database.Campfire) return structures.Contains(Database.Campfire) || structures.Contains(Database.SignalFire);
+            return structures.Contains(k);
         }
 
         // v0.46(用户):围墙 也会坏,按标准的累积损坏概率走(§2.3 那条 20% 起 / 每次 +10% / 上限 90%)。
