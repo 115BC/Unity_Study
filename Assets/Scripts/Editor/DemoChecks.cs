@@ -1634,7 +1634,14 @@ namespace SixtySLike
                   "v0.75 ④:swat 措辞里出现了数字或概率写法(用户:v0.70「所有概率文案都隐藏」,秒数屏上有倒计时)");
 
             // ⑤ A 替换:毒虫 swat 那一支 **不再掷骰**,并且确实把迷宫结果传进来了(不保留第二本账)
-            var src = System.IO.File.ReadAllText(UnityEngine.Application.dataPath + "/Scripts/Phases/NightPhase.cs");
+            //   ⚠ 先剔注释再扫:那一支里特意留了一句"原来那次 `Roll(0.6f)` 整个删除",注释里出现旧函数名
+            //     不是回潮 —— 第一次跑就是被这句注释误报的(与 v0.68「断言自己带 bug」同一族)。
+            string src = "";
+            foreach (var line in System.IO.File.ReadAllLines(UnityEngine.Application.dataPath + "/Scripts/Phases/NightPhase.cs"))
+            {
+                int k = line.IndexOf("//", System.StringComparison.Ordinal);
+                src += (k >= 0 ? line.Substring(0, k) : line) + "\n";
+            }
             int at = src.IndexOf("case \"snake\":", System.StringComparison.Ordinal);
             Check(at >= 0, "v0.75 ⑤:NightPhase 里找不到 case \"snake\"");
             if (at >= 0)

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: swat
   label: "\u70B9\u51FB\u9A71\u8D76"
-  resultHint: "\u7A97\u53E3\u5F88\u77ED,\u8D76\u5F97\u4E0A\u624D\u6253\u5F97\u8D70"
+  resultHint: "\u70B9\u4E0B\u53BB\u4F1A\u60CA\u52A8\u5B83:\u4F60\u5F97\u5728\u8425\u5730\u7684\u7F1D\u9699\u91CC\u8DD1\u5230\u51FA\u53E3,\u6162\u4E86\u5C31\u88AB\u54AC"
   requiresItem: {fileID: 0}
   requiresItemAlt: {fileID: 0}
   requiresFire: 0
