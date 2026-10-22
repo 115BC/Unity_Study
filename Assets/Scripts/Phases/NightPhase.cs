@@ -393,7 +393,10 @@ namespace SixtySLike
         static bool NavigatorActive() { return S.mate.present && S.mate.skillActiveToday && S.mate.who == DB.Navigator; }
 
         // ---------------- 结算 ----------------
-        public static string Choose(GameChoiceSO c)
+        // v0.75:毒虫的「点击驱赶」改由 2D 迷宫定结果 ⇒ `Choose` 多收一个"走没走出迷宫"。
+        //   ⚠ 默认 null 的语义 = **没有迷宫结果** ⇒ 那条 swat 按"没走到出口"结算(被咬)。
+        //     这样即使有人从别的入口(例如 `Sleep()` 的兜底)走到这一支,也不会退回旧的概率账。
+        public static string Choose(GameChoiceSO c, bool? mazeEscaped = null)
         {
             var log = new StringBuilder();
             // 通用字段先走(§7.2:一张 choice 表,不为每件事写 if)
@@ -432,7 +435,7 @@ namespace SixtySLike
             }
 
             // 语义分支(效果不是数据能表达的,按 key 走)
-            string head = Special(c, flareKind, log);
+            string head = Special(c, flareKind, log, mazeEscaped);
             WriteNightDiary(c);        // v0.30:夜里那一条日记由这里统一落笔(分支只改 key / 参数)
             if (head.StartsWith("END:"))
             {
@@ -463,7 +466,7 @@ namespace SixtySLike
         // v0.24:尸骨那三选(拿走铭牌 / 就地掩埋 / 不理会)整条删除 —— 骸骨现在是独立事件,
         //        "走过去看"就必定取走铭牌,没有掩埋这一步(骸骨第二天自动消失)。
 
-        static string Special(GameChoiceSO c, string flareKind, StringBuilder log)
+        static string Special(GameChoiceSO c, string flareKind, StringBuilder log, bool? mazeEscaped = null)
         {
             var e = cur;
             switch (e.key)
@@ -600,7 +603,10 @@ namespace SixtySLike
                     if (c.key == "flashlight") return "光照过去,东西散了(手电筒没电了)。";
                     if (c.key == "swat")
                     {
-                        if (Roll(0.6f)) return "你赶走了它。";
+                        // v0.75(用户 v0.71 的裁定「**A 替换**」):走到出口 = 赶走了它;
+                        //   被追上 / 30 秒到点 = 同一条 SnakeBite。原来那次 `Roll(0.6f)` **整个删除**,
+                        //   不保留第二本账。没有迷宫结果(null)也按被咬走 —— 决不再退回掷骰。
+                        if (mazeEscaped == true) return "你赶走了它。";
                         Diary("bite");
                         return SnakeBite(log);
                     }

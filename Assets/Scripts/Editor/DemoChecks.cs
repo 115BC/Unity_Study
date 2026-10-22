@@ -50,7 +50,7 @@ namespace SixtySLike
                 return;
             }
             B = DB.bal;
-            Bag(); Monkey(); Breakage(); Prices(); Balance(); ExploreDice(); MaterialBudget(); FishMiss(); Names(); Endings(); Inv(); MateMeal(); V045(); V046(); V047(); V049(); V049T(); V051(); V052(); V053(); V055(); V057(); V058(); V061(); V062(); V063(); V064(); V065(); V066(); V067(); V068(); V069();
+            Bag(); Monkey(); Breakage(); Prices(); Balance(); ExploreDice(); MaterialBudget(); FishMiss(); Names(); Endings(); Inv(); MateMeal(); V045(); V046(); V047(); V049(); V049T(); V051(); V052(); V053(); V055(); V057(); V058(); V061(); V062(); V063(); V064(); V065(); V066(); V067(); V068(); V069(); V075();
 
             var sb = new StringBuilder("=== 60slike demo 自检 ===\n");
             if (fails.Count == 0) sb.Append("SELFCHECK PASS:全部通过\n");
@@ -1523,6 +1523,132 @@ namespace SixtySLike
 
             Debug.Log("[自检] v0.69:夜晚选项括号 / 事件描述 / 彩蛋说明 三处 0 处概率写法(文字唯一出处 = DemoAssetBaker.PlayerText);" +
                       "渔网 按「不简化」保持现状;死字段 signalFireUsed 已清。");
+        }
+
+        // v0.75(用户:"开始按照计划做吧,做完一并提交")⇒ v0.71/v0.72 的毒虫迷宫那 7 条裁定落地后的钉子。
+        //   只验 **纯逻辑**(生成 / 连通 / 距离 / A* / 兜底图 / 文案),不碰画面与 UI 布局。
+        static void V075()
+        {
+            // ① 常量:速度与限时是用户亲手给的数(1 格/秒 / 0.7 格/秒),改它们就是改手感,必须在自检里响
+            Eq(SnakeMaze.W, 15, "v0.75 ①:迷宫宽应为 15 格");
+            Eq(SnakeMaze.H, 11, "v0.75 ①:迷宫高应为 11 格");
+            Eq(SnakeMaze.PlayerSpeed, 1f, "v0.75 ①:玩家速度应为 1 格/秒(用户裁定)");
+            Eq(SnakeMaze.SnakeSpeed, 0.7f, "v0.75 ①:蛇速度应为 0.7 格/秒(用户裁定)");
+            Eq(SnakeMaze.TimeLimit, 30f, "v0.75 ①:迷宫限时应为 30 秒(用户裁定)");
+            Eq(SnakeMaze.FallbackMaps.Length, 5, "v0.75 ①:手写兜底图应为 5 张(用户裁定「5张」)");
+
+            // ② 随机生成 200 个种子:起点/出口/蛇都在可走格、蛇离玩家 ≥5 格、两端连通、A* 路径逐格可走
+            int badStart = 0, badExit = 0, badSnake = 0, badDist = 0, badConn = 0, badPath = 0, badFeasible = 0;
+            string firstBad = "";
+            for (int seed = 0; seed < 200; seed++)
+            {
+                Vector2Int p, e, s;
+                var open = SnakeMaze.Generate(seed, out p, out e, out s);
+                bool ok = open != null;
+                if (ok && !open[p.x, p.y]) { badStart++; ok = false; }
+                if (ok && !open[e.x, e.y]) { badExit++; ok = false; }
+                if (ok && !open[s.x, s.y]) { badSnake++; ok = false; }
+                if (ok && SnakeMaze.Manhattan(s, p) < 5) { badDist++; ok = false; }
+                if (ok && (!SnakeMaze.Connected(open, p, e) || !SnakeMaze.Connected(open, s, p)))
+                { badConn++; ok = false; }
+                if (ok)
+                {
+                    var path = SnakeMaze.Path(open, p, e);
+                    bool pathOk = path != null && path.Count >= 2 && path[0] == p && path[path.Count - 1] == e;
+                    if (pathOk)
+                        for (int i = 1; i < path.Count; i++)
+                        {
+                            if (!open[path[i].x, path[i].y] || SnakeMaze.Manhattan(path[i - 1], path[i]) != 1)
+                            { pathOk = false; break; }
+                        }
+                    if (!pathOk) { badPath++; ok = false; }
+                    // 30 秒的账:玩家 1 格/秒 ⇒ 理想路线必须 **明显短于** 限时,否则"没到出口算被咬"
+                    // 会变成"这张图本来就赢不了"。>24 格已经只剩 6 秒余量,再长就是设计错。
+                    else if (path.Count - 1 > 24) { badFeasible++; ok = false; }
+                }
+                if (!ok && firstBad.Length == 0) firstBad = "首个不合格种子 " + seed;
+            }
+            Check(badStart == 0, "v0.75 ②:" + badStart + "/200 张图把玩家起点放进了墙里(" + firstBad + ")");
+            Check(badExit == 0, "v0.75 ②:" + badExit + "/200 张图的出口不可走(" + firstBad + ")");
+            Check(badSnake == 0, "v0.75 ②:" + badSnake + "/200 张图把蛇放进了墙里(" + firstBad + ")");
+            Check(badDist == 0, "v0.75 ②:" + badDist + "/200 张图的蛇起点离玩家不足 5 格(用户:「离玩家最少5格子」)");
+            Check(badConn == 0, "v0.75 ②:" + badConn + "/200 张图不连通(玩家→出口 或 蛇→玩家)");
+            Check(badPath == 0, "v0.75 ②:" + badPath + "/200 张图的 A* 路径缺失 / 穿墙 / 首尾不对");
+            Check(badFeasible == 0, "v0.75 ②:" + badFeasible + "/200 张图的理想路线超过 24 格 —— " +
+                  "玩家 1 格/秒、限时 30 秒 ⇒ 这些图本来就走不完(出口不该放在那么远)");
+
+            // 同一个种子必须给同一张图(调试与复现都靠这条;A* 的 tie-break 也是写死的)
+            Vector2Int p1, e1, s1, p2, e2, s2;
+            var m1 = SnakeMaze.Generate(12345, out p1, out e1, out s1);
+            var m2 = SnakeMaze.Generate(12345, out p2, out e2, out s2);
+            bool same = m1 != null && m2 != null && p1 == p2 && e1 == e2 && s1 == s2;
+            if (same)
+                for (int x = 0; x < SnakeMaze.W && same; x++)
+                    for (int z = 0; z < SnakeMaze.H; z++)
+                        if (m1[x, z] != m2[x, z]) { same = false; break; }
+            Check(same, "v0.75 ②:同一种子生成了两张不同的图(生成器里混进了非确定性来源)");
+
+            // A* 的等待点要稳定:同一对起终点连算两次必须是同一条路(v0.71 ③「不能在两格之间来回抖」)
+            var pa = m1 != null ? SnakeMaze.Path(m1, p1, e1) : null;
+            var pb = m1 != null ? SnakeMaze.Path(m1, p1, e1) : null;
+            bool samePath = pa != null && pb != null && pa.Count == pb.Count;
+            if (samePath)
+                for (int i = 0; i < pa.Count; i++)
+                    if (pa[i] != pb[i]) { samePath = false; break; }
+            Check(samePath, "v0.75 ②:A* 两次给出不同的路径(tie-break 不稳定 ⇒ 蛇会来回抖)");
+
+            // ③ 五张手写兜底图:每张都能解析、起点→出口可达、且至少有一格满足蛇的 5 格下限
+            for (int i = 0; i < SnakeMaze.FallbackMaps.Length; i++)
+            {
+                Vector2Int p, e;
+                var open = SnakeMaze.ParseMap(SnakeMaze.FallbackMaps[i], out p, out e);
+                Check(open != null, "v0.75 ③:手写图 " + i + " 解析失败(尺寸不对或缺 P/E)");
+                if (open == null) continue;
+                Check(SnakeMaze.Connected(open, p, e), "v0.75 ③:手写图 " + i + " 起点到出口不连通");
+                int candidates = 0;
+                for (int x = 0; x < SnakeMaze.W; x++)
+                    for (int z = 0; z < SnakeMaze.H; z++)
+                        if (open[x, z] && SnakeMaze.Manhattan(new Vector2Int(x, z), p) >= 5) candidates++;
+                Check(candidates > 0, "v0.75 ③:手写图 " + i + " 里放不下一个离玩家 ≥5 格的蛇起点");
+                Check(SnakeMaze.Path(open, p, e) != null, "v0.75 ③:手写图 " + i + " 上 A* 找不到路");
+            }
+
+            // ④ swat 新措辞(**唯一出处 = `PlayerText`**,资产要等菜单① 的 `RefreshPlayerText()` 才跟上)
+            string want;
+            DemoAssetBaker.PlayerText.TryGetValue("snake_swat", out want);
+            Eq(want, "点下去会惊动它:你得在营地的缝隙里跑到出口,慢了就被咬",
+               "v0.75 ④:swat 按钮那句不是用户批准的措辞(改表之后还要跑菜单① 才会刷进资产)");
+            // ⚠ 只钉表还不够:表改了、盘上资产没刷 ⇒ 屏幕仍是旧句而自检全绿(v0.70 那条"改了不生效"的坑)。
+            string onDisk = null;
+            foreach (var gu in AssetDatabase.FindAssets("t:GameChoiceSO"))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(gu);
+                if (System.IO.Path.GetFileNameWithoutExtension(path) != "snake_swat") continue;
+                var c = AssetDatabase.LoadAssetAtPath<GameChoiceSO>(path);
+                if (c != null) onDisk = c.resultHint;
+            }
+            Eq(onDisk, want, "v0.75 ④:盘上 snake_swat.asset 还不是这句 ⇒ 跑一次菜单①" +
+                             "(`RefreshPlayerText()` 才会刷资产);跑之前这条红是设计,不是坏");
+            var re = new System.Text.RegularExpressions.Regex("[0-9]|%|概率|几率|掷");
+            Check(!string.IsNullOrEmpty(want) && !re.IsMatch(want),
+                  "v0.75 ④:swat 措辞里出现了数字或概率写法(用户:v0.70「所有概率文案都隐藏」,秒数屏上有倒计时)");
+
+            // ⑤ A 替换:毒虫 swat 那一支 **不再掷骰**,并且确实把迷宫结果传进来了(不保留第二本账)
+            var src = System.IO.File.ReadAllText(UnityEngine.Application.dataPath + "/Scripts/Phases/NightPhase.cs");
+            int at = src.IndexOf("case \"snake\":", System.StringComparison.Ordinal);
+            Check(at >= 0, "v0.75 ⑤:NightPhase 里找不到 case \"snake\"");
+            if (at >= 0)
+            {
+                int end = src.IndexOf("case \"fishschool\":", at, System.StringComparison.Ordinal);
+                var block = end > at ? src.Substring(at, end - at) : src.Substring(at);
+                Check(block.Contains("mazeEscaped"), "v0.75 ⑤:snake 分支没有读迷宫结果 ⇒ 走不到「你赶走了它」");
+                Check(!block.Contains("Roll("), "v0.75 ⑤:snake 分支又出现了掷骰 ⇒ 用户要的是「A 替换」,不保留第二本账");
+            }
+
+            Debug.Log("[自检] v0.75:毒虫迷宫 " + SnakeMaze.W + "×" + SnakeMaze.H + " / 玩家 " + SnakeMaze.PlayerSpeed +
+                      " 格/秒 / 蛇 " + SnakeMaze.SnakeSpeed + " 格/秒 / 限时 " + SnakeMaze.TimeLimit + " 秒;" +
+                      "200 个随机种子 + 5 张手写图全部连通、蛇起点 ≥5 格;swat 不再掷骰。" +
+                      "⚠ swat 文案改了表,要跑菜单① 才会刷进资产。");
         }
 
         static void V068()

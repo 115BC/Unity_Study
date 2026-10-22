@@ -619,6 +619,10 @@ namespace SixtySLike
         //   **整个拾荒阶段的 `Start()` 就此中断**(后面 Update/LateUpdate 那三条 NRE 全是连带:玩家、相机、HUD 都没建)。
         //   ⇒ 自己按 shader 造一支,并按"越像粒子越优先"往后退;一支都找不到就 **干脆不摆粒子** ——
         //     宁可没有特效,也不能把一整个阶段炸掉(这是运行时唯一允许失败的入口,所以 `Sparks` 会收 null)。
+        // v0.75:雨那一晚也要用同一支粒子材质 —— 但它不是"火/电火花",不能走 `Sparks` 那套参数 ⇒ 只把材质借出去。
+        //   没 shader 时同样返回 null,调用方自己决定"不摆粒子",不能在这里抛。
+        public static Material ParticleMat() { return SparkMat(); }
+
         static Material SparkMat()
         {
             if (_spark != null) return _spark;

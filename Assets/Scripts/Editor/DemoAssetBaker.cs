@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -177,11 +178,143 @@ namespace SixtySLike
                 Debug.LogWarning("[60slike] 删不掉 " + folder + "(可能被占用)");
         }
 
+        // ── 第 6 章:海鸥扇翅(Animator) ───────────────────────────
+        // 用户 v0.71 ⑪「要」⇒ 一份手写 clip + 两状态 Controller。工程原本 0 个 Animator,
+        //   这正好就是课程第 6 章(Mecanim)的那件实例,一件两用。
+        // ⚠ 为什么必须走编辑器菜单:Unity **不允许运行时创建 `AnimatorController`** ⇒ 只能在这里落成资产,
+        //   运行时 `GullFlap` 按 `Resources/Anim/GullFlap` 取;取不到时它自己转骨头(程序化兜底),翅膀照动。
+        // ⚠ 与其它资产同一条约定:**已存在就不覆盖**(盘上是唯一真源)。要重烘就把这两个文件删掉再跑菜单①。
+        public const string AnimRoot = "Assets/Resources/Anim";
+        public const string GullFlapClipPath = AnimRoot + "/GullFlap.anim";
+        public const string GullFlapControllerPath = AnimRoot + "/GullFlap.controller";
+
+        static void BakeGullAnimator()
+        {
+            bool hasClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(GullFlapClipPath) != null;
+            bool hasCtrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(GullFlapControllerPath) != null;
+            if (hasClip && hasCtrl) return;
+            if (hasClip || hasCtrl)
+            {
+                Debug.LogWarning("[60slike] 海鸥 Animator 只存在一半(" + (hasClip ? "有 clip" : "缺 clip") + " / "
+                                 + (hasCtrl ? "有 controller" : "缺 controller") + ")⇒ 不覆盖。"
+                                 + "要重烘就把 " + AnimRoot + " 下这两个文件一起删掉再跑菜单①。");
+                return;
+            }
+
+            var prefab = Resources.Load<GameObject>("Models/gull");
+            if (prefab == null)
+            {
+                Debug.LogWarning("[60slike] Resources/Models/gull 不在 ⇒ 海鸥先用程序化扇翅(翅膀照动,只是没有 Animator 资产)。");
+                return;
+            }
+            if (!AssetDatabase.IsValidFolder(AnimRoot))
+                AssetDatabase.CreateFolder("Assets/Resources", "Anim");
+
+            var inst = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                var root = inst.transform;
+                var bones = Wings(root);
+                if (bones.Count == 0)
+                {
+                    Debug.LogWarning("[60slike] gull 骨架里找不到 UpperArm / Shoulder ⇒ 不生成 clip(走程序化兜底)。");
+                    return;
+                }
+
+                const float seconds = 0.8f;     // 一次完整扇动;海鸥滑翔多,这个节奏不快不慢
+                const float angle = 28f;
+                var clip = new AnimationClip { name = "GullFlap", frameRate = 30f, legacy = false };
+                foreach (var b in bones)
+                {
+                    string path = AnimationUtility.CalculateTransformPath(b, root);
+                    // 左右反相:与运行时兜底同一个判据(局部 x 的符号),这样有/没有 Animator 资产观感一致。
+                    float side = b.localPosition.x >= 0f ? 1f : -1f;
+                    var rest = b.localRotation;
+                    // 9 个采样点 = 一条近似正弦的循环;首尾同值 ⇒ loopTime 接缝不跳
+                    const int n = 8;
+                    for (int i = 0; i <= n; i++)
+                    {
+                        float t = seconds * i / n;
+                        float a = angle * Mathf.Cos(2f * Mathf.PI * i / n) * side;
+                        var q = rest * Quaternion.Euler(0f, 0f, a);
+                        AddQuatCurves(clip, path, t, q);
+                    }
+                }
+                var settings = AnimationUtility.GetAnimationClipSettings(clip);
+                settings.loopTime = true;
+                AnimationUtility.SetAnimationClipSettings(clip, settings);
+                AssetDatabase.CreateAsset(clip, GullFlapClipPath);
+
+                var ctrl = AnimatorController.CreateAnimatorControllerAtPath(GullFlapControllerPath);
+                ctrl.AddParameter("Flap", AnimatorControllerParameterType.Bool);
+                var sm = ctrl.layers[0].stateMachine;
+                var idle = sm.AddState("Idle");            // 空状态:不写任何通道 = 保持原姿势
+                var flap = sm.AddState("Flap");
+                flap.motion = clip;
+                sm.defaultState = idle;
+                var toFlap = idle.AddTransition(flap);
+                toFlap.hasExitTime = false;
+                toFlap.duration = 0.15f;
+                toFlap.AddCondition(AnimatorConditionMode.If, 0f, "Flap");
+                var toIdle = flap.AddTransition(idle);
+                toIdle.hasExitTime = false;
+                toIdle.duration = 0.15f;
+                toIdle.AddCondition(AnimatorConditionMode.IfNot, 0f, "Flap");
+
+                EditorUtility.SetDirty(ctrl);
+                AssetDatabase.SaveAssets();
+                Debug.Log("[60slike] 海鸥扇翅资产就绪:" + GullFlapClipPath + " + " + GullFlapControllerPath
+                          + "(转动 " + bones.Count + " 根翅膀骨骼)");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(inst);
+            }
+        }
+
+        // 优先 UpperArm(真正的翅根);没有才退 Shoulder —— **不要两层一起转**,那会把 28° 叠成 56°。
+        static List<Transform> Wings(Transform root)
+        {
+            var all = root.GetComponentsInChildren<Transform>(true);
+            var upper = new List<Transform>();
+            var shoulder = new List<Transform>();
+            for (int i = 0; i < all.Length; i++)
+            {
+                var t = all[i];
+                if (t == root) continue;
+                if (t.name.IndexOf("UpperArm", StringComparison.OrdinalIgnoreCase) >= 0) upper.Add(t);
+                else if (t.name.IndexOf("Shoulder", StringComparison.OrdinalIgnoreCase) >= 0) shoulder.Add(t);
+            }
+            return upper.Count > 0 ? upper : shoulder;
+        }
+
+        static void AddQuatCurves(AnimationClip clip, string path, float time, Quaternion q)
+        {
+            AddCurve(clip, path, "localRotation.x", time, q.x);
+            AddCurve(clip, path, "localRotation.y", time, q.y);
+            AddCurve(clip, path, "localRotation.z", time, q.z);
+            AddCurve(clip, path, "localRotation.w", time, q.w);
+        }
+
+        static void AddCurve(AnimationClip clip, string path, string prop, float time, float value)
+        {
+            var curve = new AnimationCurve(new Keyframe(time, value));
+            for (int i = 0; i < curve.length; i++)
+            {
+                AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+                AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+            }
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(path, typeof(Transform), prop), curve);
+        }
+
         // ── 数据表 ───────────────────────────────────────────────
         // 数值全部来自开发文档 §5/§6/§2.3/§3/§4 与 v0.12/v0.13 + 补录①~⑧ 的定案。
         static Database BakeData()
         {
             created = 0;
+            // v0.75(用户 v0.71 ⑪「海鸥扇翅膀」= 第 6 章那件实例):.anim + .controller 只能在编辑器里生成
+            //   (运行时不能创建 AnimatorController)⇒ 挂在菜单① 这条路里,和资产一起落盘。
+            BakeGullAnimator();
             var db = GetOrCreate<Database>(DatabaseAsset, out _);
             db.bal = GetOrCreate<BalanceConfig>(BalanceAsset, out _);
 
@@ -1884,7 +2017,8 @@ namespace SixtySLike
             { "ship_flashlight",        "照得着就走(结局A);落空 = 错过,这条船永久不再来" },
             { "smallshadow_fire",       "队友不一定撑得住;火本次必熄" },
             { "smallshadow_watch",      "队友必定存活;次日体力 -2" },
-            { "snake_swat",             "窗口很短,赶得上才打得走" },
+            // v0.75(用户 v0.71 ⑦「改」):迷宫那一轮一起换的词。**不写概率、不写秒数**(屏上本来就有倒计时)。
+            { "snake_swat",             "点下去会惊动它:你得在营地的缝隙里跑到出口,慢了就被咬" },
             // —— 夜晚屏那句事件描述 ——
             { "rain",                   "云压得很低。" },     // 原来后面还挂着"内部按 3:2:1 掷档"= 机制,不给玩家看
             // —— 收集页右栏的彩蛋说明(10 条;"整局最多一次"这种次数上限不是概率,留着)——

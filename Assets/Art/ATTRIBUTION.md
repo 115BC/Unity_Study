@@ -9,7 +9,8 @@
 |---|---|---|
 | KayKit(Kay Lousberg)| **CC0 1.0** | 逐包 `LICENSE.txt` 原文,10 个仓库/包全部命中 |
 | Quaternius(Justin, @Quaternius) | **CC0 1.0**(我们手上这批) | 17 个 zip 里 13 个带 CC0 原文;另 4 个见下 |
-| acornbringer / Easy Animated Enemy | CC0(**用户口头确认**) | 本机连不上 itch.io,包内也无许可文件 —— 见「待补证」 |
+| Quaternius **Easy Enemy Pack(Jan 2019)** | **CC0 1.0** | 包页 `quaternius.com/packs/easyenemy.html` 原文 `License CC0` + 正文 `free to use in personal and commercial projects`;与本地 zip 的 2019-01 时间戳、5 种敌人完全对上 |
+| acornbringer **Simplistic Low Poly Nature** | **自定义:可免费用,但不得再分发素材本身** | 商品页无 License 字段;作者在页面评论区逐字回复 `free to use them as you please. However, you are not permitted to re-distribute the assets themselves.` |
 | Incompetech(Kevin MacLeod)音乐 6 首 | **CC BY 4.0 ⇒ 必须署名** | 站方许可页原文;游戏内文本在 **`Assets/Resources/Text/Credits.txt`**(唯一一份,致谢页读它) |
 | Noto Sans SC 字体(思源黑体) | **SIL OFL 1.1 ⇒ 必须随字体带许可文本** | 许可证全文已存 `Assets/Art/FONT-OFL-NotoSansSC.txt`,见「字体」一节 |
 | **用户提供:渔网(2026-10-06 下载,2026-10-07 给出来源页)** | **CC BY 4.0 ⇒ 必须署名** | Sketchfab 公开 API 逐字核到 `"CC Attribution"` / `creativecommons.org/licenses/by/4.0/`,作者 **cozee4sure** —— 见「渔网」一节 |
@@ -82,16 +83,22 @@
 | 1001T012631 | RPG Essentials | 13 | 同上;Drive ID 逐字等于 `quaternius.com/packs/rpg.html` 页面里的那条 |
 | 1001T021032 | Junk Food | 16 | 同上;Drive ID 来自 `quaternius.com/packs/junkfood.html` |
 
-## 待补证(用户已确认 CC0,我这边复核不了)
+## ✅ 已补证(2026-10-22:用户给出两个商品页 URL,两包都落地)
 
-| 包 | 内容 | 缺什么 |
+| 包 | 内容 | 结论与证据 |
 |---|---|---|
-| `Simplistic Low Poly Nature.zip`(25) | 鸟×2、蝴蝶、鱼、松鼠、龟、荷叶、蘑菇、树枝、羽毛、草、苔石 | 出处 = `https://acornbringer.itch.io/assets-simplistic-low-poly-nature`(用户给出)。**itch.io 从这台机器 TCP 超时(试过三轮:curl / WebFetch / 后台),页面读不出**,包内也没有 LICENSE 文件。**用户确认按 CC0 使用。** |
-| `Easy Animated Enemy Pack - Jan 2019.zip`(6) | **`Snake` `Snake_angry`**、`Rat`、`Wasp`、`Frog`、`Spider` | 无出处页、无许可文件。**用户确认按 CC0 使用。** |
+| `Simplistic Low Poly Nature.zip`(25) | 鸟×2、蝴蝶、鱼、松鼠、龟、荷叶、蘑菇、树枝、羽毛、草、苔石 | 出处 = `https://acornbringer.itch.io/assets-simplistic-low-poly-nature`(用户 2026-10-22 给出)。**商品页没有 `License:` 字段**,但作者 acornbringer 在页面评论区对"是不是免费/什么许可"的提问 **逐字回复**:`Yes! This particular asset is "Name your own price" which could be free indeed! And once you download the assets, you are free to use them as you please. However, you are not permitted to re-distribute the assets themselves.` ⇒ **可免费用(本项目/课程项目没问题),但不得再分发素材本身;这不是 CC0**。 |
+| `Easy Animated Enemy Pack - Jan 2019.zip`(6) | **`Snake` `Snake_angry`**、`Rat`、`Wasp`、`Frog`、`Spider` | **实际来源 = Quaternius 的 Easy Enemy Pack**,不是 acornbringer。页面 `https://quaternius.com/packs/easyenemy.html` 逐字:`Easy Enemy Pack January 2019` / `This pack includes 5 different animated enemies … FBX, OBJ and Blend formats, free to use in personal and commercial projects` / `License CC0`。⚠ **CC0 ⇒ 可商用、可再分发、不要求署名**。此前台账把它记在 acornbringer 名下是错的,现纠正。 |
 
-要补证时:打开页面看右下角 **More info → `License:`** 那一行,抄回来即可。
+⚠ **一处命名遗留(不动文件)**:`Assets/Art/itch/animated_enemies/` 这个目录名里的 `itch` 对 Quaternius 那包已不准确 —— 但它只是历史命名,改名会连带 `.meta` 与 GUID,而内容 0 引用,没必要动;按本节口径记来源即可。
 
-⚠ **2026-10-07 决定状态(用户:"全传")**:素材源库整批进版本库 ⇒ **这两个包也会随公开仓库被再分发**,依据仍然是"用户口头确认 CC0,本台账的编者未能复核"。⚠ 自查同时给过一个零代价的替代方案(现在没有采用):**这两个包里的东西一件都没被用** —— `Assets/Art/itch` 共 34 个文件 / 7MB,按 GUID 反查场景与材质 **引用 0 个**,`Assets/Resources/Models/` 里也没有任何一件来自它们(海鸥用的是 Quaternius 的 `Birb`,狐狸用的是 Quaternius 的 `Fox`;`Snake` 当年只是备着,从没接线)。要改主意的话,把 `/_packs/` 那条 gitignore 的思路照搬一行 `Assets/Art/itch/` 就行,玩法与画面零变化。
+⚠ **2026-10-22 决定与执行(用户答"1" = 走 ①)**:
+
+- v0.70 的"全传"已经把 **acorn 那包的 26 个素材 + `.meta`(共 52 个文件)** 提交并推到公开仓库(commit `4a906c1`;当前 `origin/main` 与本地 HEAD 相同,仍含它)⇒ 这正是作者禁止的 **"再分发素材本身"**。
+- **已执行 ①「只往前删」**:`git rm -r --cached -- Assets/Art/itch/acorn_stylized_nature Assets/Art/itch/acorn_stylized_nature.meta`(53 条跟踪记录 = 52 个包内文件 + 1 个目录 `.meta`);`.gitignore` 增加 `/Assets/Art/itch/acorn_stylized_nature/` 与 `/Assets/Art/itch/acorn_stylized_nature.meta`。**工作区文件一个没删**(盘上仍 52 个),本地工程照常可用;只是不再进版本库、今后不再随克隆/推送分发。
+- ⚠ **历史没有改**:`4a906c1` 与 `origin/main` 里那份仍在,所以"公开仓库曾分发过"这件事在历史里仍可查到;这条路只保证 **今后** 不再分发。清历史(②)要重写 + **force-push**,不可逆,需单独点头;③(向作者取书面许可)未做。
+- **Quaternius 那包不受此冲突影响**:CC0 允许再分发(`Assets/Art/itch/animated_enemies/` 12 条跟踪记录留在仓库里);但要记住他官网 2026-08-28 起新下的东西可能改成 **QAL**(不得转售/再分发素材本身),这个 2019 包页明写 CC0,按 CC0 走。
+- **玩法零影响**:`Assets/Art/itch` 两个目录合计 **64 个文件(含 `.meta`)/ 6.7MB**,按 GUID 反查场景与材质 **0 引用**;`Assets/Resources/Models/` 里没有任何一件来自它们(海鸥 = Quaternius `Birb`、狐狸 = Quaternius `Fox`)。
 
 ## 渔网 —— **许可已确认:CC BY 4.0,须署名**(2026-10-07 补上来源)
 
@@ -149,5 +156,5 @@
 
 ## 排除项
 
-- **`Spider`(Easy Animated Enemy Pack 内)一律不用** —— 用户明确要求不要蜘蛛。
+- **`Spider`(Quaternius Easy Enemy Pack 内)一律不用** —— 用户明确要求不要蜘蛛。
 - CC-BY 4.0 素材的署名文本 **只写在一处:`Assets/Resources/Text/Credits.txt`**(游戏内致谢页的唯一出处)。新增一首/一件就在那份 txt 里加一个 `## 小节`;**本台账只记许可依据、URL 与取证方式,不再抄署名串**(v0.67 起的口径,自检 `V067()` ③ 盯着)。

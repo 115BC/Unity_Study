@@ -35,3 +35,8 @@ Thumbs.db
 
 # 美术原始下载包(只在本地留档,不进版本库)
 /_packs/
+
+# acornbringer「Simplistic Low Poly Nature」:许可为"可免费用、不得再分发素材本身"
+# (2026-10-22 核定;见 Assets/Art/ATTRIBUTION.md)。文件留在本地,不进版本库。
+/Assets/Art/itch/acorn_stylized_nature/
+/Assets/Art/itch/acorn_stylized_nature.meta

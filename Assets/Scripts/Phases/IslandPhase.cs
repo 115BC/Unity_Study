@@ -20,6 +20,8 @@ namespace SixtySLike
                               //   所以这里不留"看起来像前置条件"的死状态 —— 想要那条规矩,那是一轮独立的裁定,不是恢复一个旧字段)
         IslandWalk walk;      // v0.53(§11-84):与固定镜头共存的那一路自由视角,`V` 来回
         Shoreline shore;      // v0.58(用户:"**如果能有海浪更好**"):浪线那条会动的泡沫带,**纯演出**
+        IslandSky sky;        // v0.75:天空盒(只给第一人称)+ 远处云 + 固定色环境光那一个开关
+        Wildlife wildlife;    // v0.75:绕岛飞的那几只海鸥(纯演出)
 
         public void Start()
         {
@@ -64,6 +66,12 @@ namespace SixtySLike
             //     **它不参与 涨潮 的任何判定**(那条仍是夜晚事件的数值)—— 所以"画着大浪而那一晚没涨"这种
             //     两本账现在并不存在:浪一直在,涨潮是另一回事。以后要让它参与,那是新机制,得单独裁。
             if (shore == null && root.islandStage != null) shore = Shoreline.Build(root.islandStage.transform);
+            // v0.75(用户 v0.71):「第一人称才有天空盒,否则就远处有云即可」+「装天空盒时 ambient 钉固定色」
+            //   ⇒ 环境光/天空盒只有一个开关(`IslandSky`),`SetNightLook` 只在那两个固定色之间切。
+            //   ⚠ 必须 **在 `Refresh()` 之前** attach:Refresh 第一件事就是 SetNightLook,
+            //     而它要读 `sky.DayAmbient`;晚一步就会先拿 `dayAmbientColor` 那份旧值画一帧。
+            if (sky == null) sky = IslandSky.Attach(root, gameObject);
+            if (wildlife == null) wildlife = Wildlife.Attach(root, gameObject);
             Refresh();
         }
 
@@ -510,7 +518,11 @@ namespace SixtySLike
             // v0.49:**夜里那层环境光要在这里交回去**。`RenderSettings` 是全局的,而本阶段随时可能在夜里
             //   被结局/下一局销毁(死亡、通关、重开)。不交还 ⇒ 下一局的机舱会带着夜晚的冷蓝环境光开场,
             //   而且下一个 IslandPhase 存的是"那一份错的",于是整个项目永久变暗。
-            if (dayAmbientSaved)
+            // v0.75:有了 `IslandSky` 之后,那份"进荒岛之前的渲染设置"由它保管并交还 ——
+            //   这里 **只在没有 sky 的时候** 退回 v0.49 那条自救路径(比如场景层缺失、天空组件没挂上)。
+            //   ⚠ 两边都写会 **按销毁顺序打架**:我们先把 Flat 写成"今天的环境光",sky 再把自己那份盖回去,
+            //     最终谁在最后谁说了算 —— 那正是 v0.49 那条教训要避免的"下一局带着错的颜色开场"。
+            if (sky == null && dayAmbientSaved)
             {
                 RenderSettings.ambientMode = dayAmbientMode;
                 RenderSettings.ambientLight = dayAmbientColor;
@@ -621,10 +633,17 @@ namespace SixtySLike
                 props.Add(PropAt(st.fireAnchor.position, "", PrimitiveType.Cylinder, new Color(0.30f, 0.20f, 0.10f),
                                  () => NightClickTarget("fire"), new Vector3(1.9f, 0.05f, 1.9f), 0.05f));
                 // v0.50(用户:"5.搜寻飞机能加入远方的动画吗")
-                //   ⇒ 这一晚 远处真的有一架飞机掠过。**它不是新机制** —— 那条事件的描述从 v0.6 就写着
+                //   ⇒ 那一晚 远处真的有一架飞机掠过。**它不是新机制** —— 那条事件的描述从 v0.6 就写着
                 //     "远处有机影掠过",而屏幕上一直没有那架飞机,所以这是把已经说出口的话画出来。
                 //     判定、选项、数值一个字都没动:它纯粹是那晚的背景演出,不可点、不参与任何结算。
-                if (NightResolver.Current == DB.SearchPlane) props.Add(DistantPlane(st.transform));
+                // v0.75(用户 v0.71 ⑧「飞机夜夜飞」):从"只有搜寻飞机那一晚"改成 **每一晚都在** ——
+                //     它仍纯演出:不占落点、不可点、不参与结算。
+                props.Add(DistantPlane(st.transform));
+                // v0.75(用户 v0.71 ⑧「下雨」):雨夜里真的有雨。判据是事件 key(rain / rain_light / rain_heavy / rain_storm),
+                //   **不是**掷档——档位只决定雨多大这件事本来就在夜里那句话里,这里只画"下雨了"。
+                if (NightResolver.Current != null &&
+                    NightResolver.Current.key.StartsWith("rain", StringComparison.Ordinal))
+                    props.Add(IslandSky.RainFx(st.transform, root.cam != null ? root.cam.transform : null));
             }
             // 大海:v0.28 起 喝海水 已随喝水系统删除 ⇒ 白天点它什么都不发生,它只在夜晚当"徒手抓鱼/下水"的落点
             if (st.seaAnchor != null)
@@ -687,8 +706,12 @@ namespace SixtySLike
             for (int i = 0; i < S.gull.presentCount; i++)
             {
                 var p = st.gullAnchor.position + new Vector3(i * 1.15f - 1.7f, 0f, i % 2 * 0.9f);
-                props.Add(PropAt(p, i == 0 ? "海鸥" : "", PrimitiveType.Sphere, new Color(0.94f, 0.95f, 0.97f),
-                                 ScatterGulls, new Vector3(0.85f, 0.6f, 0.85f), 0f, null, null, "gull"));
+                var gull = PropAt(p, i == 0 ? "海鸥" : "", PrimitiveType.Sphere, new Color(0.94f, 0.95f, 0.97f),
+                                 ScatterGulls, new Vector3(0.85f, 0.6f, 0.85f), 0f, null, null, "gull");
+                // v0.75(用户 v0.71 ⑪「海鸥扇翅膀」):地上这几只也扇 —— 与天上那四只同一个组件,
+                //   有 Animator 资产时走它、没有就走程序化兜底。
+                if (gull.GetComponent<GullFlap>() == null) gull.AddComponent<GullFlap>();
+                props.Add(gull);
             }
             // v0.47:两把火各有各的火苗 —— 篝火 在 fireAnchor 那格,信号火堆 在自己那一格。
             //        原来那一条 "if (S.fireLitTonight)" 的火苗现在只算 篝火 的(否则 信号火堆 烧着时
@@ -728,10 +751,18 @@ namespace SixtySLike
             //   这正是"要不要花 1 精力重新点燃"在屏幕上该有的一份分量。
             //   ⚠ 背景板与天空是 `Unlit/Color`,**不受这盏灯影响**(预期):它们是"画上去的天",不是场景里的东西。
             if (campfire != null && S.HasStructure(Database.Campfire))
+            {
                 World.PointLight(campfire, new Vector3(0f, 0.55f, 0f), new Color(1f, 0.52f, 0.16f), 2.4f, 8f, true);
+                // v0.75(用户 v0.71 ⑧「火焰」):火苗 = 粒子(与拾荒危险区同一支 `World.Sparks`)。
+                //   挂在这块灶身上 ⇒ 熄火/重建时随 props 一起消失,不用另管生命周期。
+                World.Sparks(campfire, new Color(1f, 0.55f, 0.15f, 0.9f), true);
+            }
             // 信号火堆 比篝火大一圈,又是"给远处的船看的" ⇒ 光给得更远更亮(同一句视觉话,不改任何数值)
             if (signalFire != null && S.HasStructure(Database.SignalFire))
+            {
                 World.PointLight(signalFire, new Vector3(0f, 1.1f, 0f), new Color(1f, 0.62f, 0.24f), 3.2f, 13f, true);
+                World.Sparks(signalFire, new Color(1f, 0.66f, 0.2f, 0.9f), true);
+            }
         }
 
         // burning = 这件建筑是"火"(要点的是它、牌子上要写剩余晚数);at 是相对营地方位的偏移,
@@ -2026,6 +2057,7 @@ namespace SixtySLike
         //       并且一晚只能做一件事(§2.3 夜用规则);"尝试睡去" = 这一晚的"什么都不做"。
         bool night;
         bool nightDone;
+        bool mazeOpen;      // v0.75:毒虫迷宫开着时挡住"同一晚再开一场"(结算只等那一次回调)
         // v0.30:nightLine 现在 **只** 装"点了但今晚帮不上忙"这类拒绝提示 ——
         //        夜晚的结算文本已经整体搬进日记(天亮时自动翻开那一页)。
         string nightLine;
@@ -2053,6 +2085,23 @@ namespace SixtySLike
         void DoNight(GameChoiceSO c)
         {
             if (nightDone) return;
+            // v0.75(用户 v0.71 的裁定):**只有 `snake` 事件的 `swat` 走迷宫**;其余选项、其余事件一行不改。
+            //   迷宫结束后再结算:走到出口 ⇒ "你赶走了它";被追上 / 30 秒到点 ⇒ 原 `SnakeBite` 那条路。
+            //   ⚠ `mazeOpen` 只是防连点:同一个按钮在一次结算里只能开一场迷宫。
+            if (NightResolver.Current == DB.Snake && c.key == "swat")
+            {
+                if (mazeOpen) return;
+                mazeOpen = true;
+                SnakeMaze.Open(root, root.modal, S.rng.Next(), escaped =>
+                {
+                    mazeOpen = false;
+                    if (nightDone || S.phase != RunPhase.Island) return;
+                    NightResolver.Choose(c, escaped);
+                    nightDone = true;
+                    EndNightOrRefresh();
+                });
+                return;
+            }
             // v0.30:夜晚不再显示"结算文本" —— 那一晚发生了什么,天亮时在日记里读。
             //        返回值仍然被 Log 到控制台(调试通道)。
             NightResolver.Choose(c);
@@ -2113,26 +2162,37 @@ namespace SixtySLike
         void SetNightLook(bool on)
         {
             if (root.sun != null) root.sun.intensity = on ? 0.06f : 1.0f;
-            // v0.49(用户:"灯光系统在篝火和手电筒再加一下(二者的光)"):夜里得 **真的暗下来**,那两盏火才有意义。
-            //   ⚠ 白天 **一个数都不改** —— 场景里环境光是 Skybox 模式,那个观感是验收过的;
-            //     只在入夜时切成 Flat 的一支冷蓝,天亮原样交回,所以这条改动在白天完全看不出来。
-            //     留一层月光(不是纯黑):夜晚仍然要在沙滩上点到东西 —— "每个选择都有可点的落点"是红线。
-            //     觉得夜太亮/太暗就只改 NightAmbientColor 这一支。
-            if (!dayAmbientSaved)
-            {
-                dayAmbientMode = RenderSettings.ambientMode;
-                dayAmbientColor = RenderSettings.ambientLight;
-                dayAmbientSaved = true;
-            }
-            if (on)
+            // v0.75(用户 v0.72):「**天空盒装上时 ambient 钉固定色**」。
+            //   ⇒ 有 `IslandSky` 的时候环境光 **永远** 是 Flat,白天 = 进场时从原 Skybox 环境光采样出来的那一支、
+            //     夜里 = 冷蓝 —— 这里 **不再碰 Skybox 模式**,也不再需要"天亮把场景那份还回去"(那份由 sky 保管)。
+            //     天空盒只当第一人称的背景(清屏方式由 `IslandSky.Update` 按视角切),不参与环境光。
+            //   没有 sky(场景层缺失、组件没挂上)才退回 v0.49 的入夜切 / 天亮还那条自救路径。
+            if (sky != null)
             {
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-                RenderSettings.ambientLight = NightAmbientColor;
+                RenderSettings.ambientLight = on ? NightAmbientColor : sky.DayAmbient;
             }
             else
             {
-                RenderSettings.ambientMode = dayAmbientMode;
-                RenderSettings.ambientLight = dayAmbientColor;
+                // v0.49(用户:"灯光系统在篝火和手电筒再加一下(二者的光)"):夜里得 **真的暗下来**,那两盏火才有意义。
+                //   ⚠ 白天 **一个数都不改**;只在入夜时切成 Flat 的一支冷蓝,天亮原样交回。
+                //     留一层月光(不是纯黑):夜晚仍然要在沙滩上点到东西 —— "每个选择都有可点的落点"是红线。
+                if (!dayAmbientSaved)
+                {
+                    dayAmbientMode = RenderSettings.ambientMode;
+                    dayAmbientColor = RenderSettings.ambientLight;
+                    dayAmbientSaved = true;
+                }
+                if (on)
+                {
+                    RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+                    RenderSettings.ambientLight = NightAmbientColor;
+                }
+                else
+                {
+                    RenderSettings.ambientMode = dayAmbientMode;
+                    RenderSettings.ambientLight = dayAmbientColor;
+                }
             }
             // 白天的清屏色直接就是天空蓝:就算那块天空板因为材质/光照没画出来,
             // 屏幕也不会变成"看不见东西"的黑底 —— 相机的背景本身就是天。

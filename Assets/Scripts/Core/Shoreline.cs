@@ -40,13 +40,15 @@ namespace SixtySLike
         void BuildBands()
         {
             var mesh = Band(InnerR, OuterR, 96);
-            bands = new Transform[3];
-            mats = new Material[3];
+            // v0.75(用户 v0.71 ⑧「海浪」):三条 → **四条**,并给网格 UV + 一张程序化泡沫贴图。
+            //   原来只有一圈白边,动起来像一条会呼吸的线;加纹理后才有"水在跑"的细节。
+            bands = new Transform[4];
+            mats = new Material[4];
             for (int i = 0; i < bands.Length; i++)
             {
                 var b = new GameObject("Band" + i);
                 b.transform.SetParent(transform, false);
-                b.AddComponent<MeshFilter>().sharedMesh = mesh;      // 三条共用一张网,靠缩放错开
+                b.AddComponent<MeshFilter>().sharedMesh = mesh;      // 四条共用一张网,靠缩放错开
                 b.AddComponent<MeshRenderer>().sharedMaterial = mats[i] = Foam();
                 bands[i] = b.transform;
             }
@@ -57,13 +59,20 @@ namespace SixtySLike
             t += Time.unscaledDeltaTime;
             for (int i = 0; i < bands.Length; i++)
             {
-                float ph = t * 0.85f + i * 2.1f;
-                // 三条各占一档基础半径(1 - 0.012*2 ≈ 0.5 米间距),再各自呼吸 ±0.22 米
-                float k = 1f - i * 0.026f + Mathf.Sin(ph) * 0.011f;
+                float ph = t * 0.85f + i * 1.7f;
+                // 四条各占一档基础半径(1 - 0.019*3 ≈ 0.7 米总跨度),再各自呼吸 ±0.26 米
+                float k = 1f - i * 0.019f + Mathf.Sin(ph) * 0.013f;
                 bands[i].localScale = new Vector3(k, 1f, k);
+                // v0.75:整条带子再上下浮 ±2.5 厘米(只往上抬,避免内圈埋进沙里)。
+                //   ⚠ 不是顶点位移 shader —— 那一档成本高得多,这一轮先用"整圈抬落 + 贴图跑动"。
+                var lp = bands[i].localPosition;
+                lp.y = 0.025f * (0.5f + 0.5f * Mathf.Sin(ph + 0.9f));
+                bands[i].localPosition = lp;
                 var c = mats[i].color;
-                c.a = 0.13f + 0.19f * (0.5f + 0.5f * Mathf.Sin(ph + 1.1f));   // 沫起来时最亮
+                c.a = 0.10f + 0.32f * (0.5f + 0.5f * Mathf.Sin(ph + 1.1f));   // 沫起来时最亮
                 mats[i].color = c;
+                // 贴图沿圆周慢慢跑:相邻两条反向,看起来是"来回推"而不是整圈同步平移
+                mats[i].mainTextureOffset = new Vector2(t * 0.018f * (i % 2 == 0 ? 1f : -1f), 0f);
             }
         }
 
@@ -81,12 +90,49 @@ namespace SixtySLike
             m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
             m.renderQueue = 3000;
             m.color = new Color(0.94f, 0.98f, 1f, 0.22f);
+            // v0.75:泡沫细节走一张程序化贴图(零素材、零许可账,与心脏/粒子同一套做法)。
+            //   u 沿圆周重复 12 次、v 只跨这条带子一次 ⇒ 内淡外浓的那层"碎沫"来自贴图本身的 alpha。
+            m.mainTexture = FoamTexture();
+            m.mainTextureScale = new Vector2(12f, 1f);
             return m;
+        }
+
+        static Texture2D _foamTex;
+
+        // 白色噪点 + 沿 v 方向"外浓内淡"的 alpha:用 Perlin 拉出絮状,再用硬阈值切出几粒小泡。
+        static Texture2D FoamTexture()
+        {
+            if (_foamTex != null) return _foamTex;
+            const int n = 128;
+            _foamTex = new Texture2D(n, n, TextureFormat.RGBA32, true);
+            _foamTex.name = "foam";
+            _foamTex.wrapMode = TextureWrapMode.Repeat;
+            _foamTex.filterMode = FilterMode.Bilinear;
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float u = (float)x / n, v = (float)y / n;
+                    // 横向两个尺度的絮状噪声 + 少量细泡;`Mathf.PerlinNoise` 本身在 0/1 处不闭合,
+                    //   所以叠一个镜像分量,让贴图左右接缝不至于出现一条硬线。
+                    float a = Mathf.PerlinNoise(u * 9f, v * 3f);
+                    float b = Mathf.PerlinNoise(1f - u, v * 3f);
+                    float grain = Mathf.PerlinNoise(u * 34f, v * 19f);
+                    float m = Mathf.Lerp(a, b, Mathf.Abs(u - 0.5f) * 2f);
+                    float alpha = Mathf.Clamp01((m * 0.85f + grain * 0.35f - 0.35f) * 2.2f);
+                    alpha *= v * v * (3f - 2f * v);                  // 外沿更浓:浪花是往外碎的
+                    px[y * n + x] = new Color32(255, 255, 255, (byte)(alpha * 255f));
+                }
+            _foamTex.SetPixels32(px);
+            _foamTex.Apply(true);
+            _foamTex.hideFlags = HideFlags.DontSave;
+            return _foamTex;
         }
 
         static Mesh Band(float inner, float outer, int seg)
         {
             var v = new List<Vector3>();
+            var uv = new List<Vector2>();
             var tri = new List<int>();
             for (int i = 0; i < seg; i++)
             {
@@ -98,9 +144,14 @@ namespace SixtySLike
                 v.Add(c3); v.Add(c2); v.Add(c1);
                 tri.Add(n); tri.Add(n + 1); tri.Add(n + 2);
                 tri.Add(n + 3); tri.Add(n + 4); tri.Add(n + 5);
+                // v0.75:UV 与顶点一一对应(u = 圆周 0..1,v = 内圈 0 / 外圈 1),贴图靠 `mainTextureScale` 重复。
+                float u0 = (float)i / seg, u1 = (float)(i + 1) / seg;
+                uv.Add(new Vector2(u0, 0f)); uv.Add(new Vector2(u1, 0f)); uv.Add(new Vector2(u0, 1f));
+                uv.Add(new Vector2(u1, 0f)); uv.Add(new Vector2(u1, 1f)); uv.Add(new Vector2(u0, 1f));
             }
             var m = new Mesh { name = "ShoreFoam" };
             m.SetVertices(v);
+            m.SetUVs(0, uv);
             m.SetTriangles(tri, 0);
             m.RecalculateNormals();
             m.RecalculateBounds();
