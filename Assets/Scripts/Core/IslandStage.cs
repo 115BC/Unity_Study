@@ -62,6 +62,11 @@ namespace SixtySLike
     // 沙滩上那件东西:点它 = 弹出与它有关的白天行动;悬浮 = 名字(+ 消耗品剩余量 + 精力价)
     public class IslandProp : MonoBehaviour
     {
+        // v0.78:结局 I 过场期间沙滩上的东西还在(夜色道具/篝火/海鸥的落点),但这一镜不许再点。
+        //   判据只有这一个开关,由 `IslandPhase.BeginGullEnding` 打开、`OnDestroy`/`Start` 交还 ——
+        //   不给每件道具各挂一份"现在能不能点"。静态是因为 `IslandProp` 拿不到阶段引用。
+        public static bool Blocked;
+
         public Action onClick;
         public Action onOver;
         public Action onOut;
@@ -76,7 +81,7 @@ namespace SixtySLike
         public Color hoverColor = Color.clear;
         Color baseColor; bool baseColorCaptured;
 
-        void OnMouseUpAsButton() { if (onClick != null) onClick(); }
+        void OnMouseUpAsButton() { if (!Blocked && onClick != null) onClick(); }
         void OnMouseEnter() { mouseOver = true; ApplyHover(onOver); }
         void OnMouseExit() { mouseOver = false; ApplyHover(onOut); }
 
@@ -90,7 +95,7 @@ namespace SixtySLike
         //   —— 只写不读的东西不留(同"名字输入安全"那批教训:第二份状态早晚会说谎)。
         void ApplyHover(Action then)
         {
-            bool on = mouseOver && !IslandWalk.Active;
+            bool on = mouseOver && !IslandWalk.Active && !Blocked;
             if (label != null)
             {
                 label.gameObject.SetActive(on);

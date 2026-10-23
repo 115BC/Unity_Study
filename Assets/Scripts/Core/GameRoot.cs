@@ -44,6 +44,9 @@ namespace SixtySLike
             if (islandStage == null) islandStage = FindObjectOfType<IslandStage>();
             if (sun == null) sun = FindObjectOfType<Light>();
 
+            // v0.92:启动时套用设置里存的画面/音量(分辨率/显示模式/帧率/主音量)。BGM 音量由 Music 懒读。
+            SettingsPage.ApplySaved();
+
             // 字体不在这里管了(v0.50):`Ui.BootFont` 用 Resources 按名字取,编辑器与打包同一条路。
             //   原来这个 Awake 里还有一句 `Ui.Use(uiFont)` —— 它是"第二真源",会把字体覆盖回 Inspector 上
             //   拖的那份(现在那一格拖的还是行楷),所以字段连同这句一起删掉。
@@ -64,6 +67,30 @@ namespace SixtySLike
         //   这些弹层全都开在 `modal` 底下 ⇒ 判据只有这一条,不再一个一个列名单
         //   (我上一版就是只认了 Tab 面板那一个,所以队友面板一开光标就"消失"了 —— 名单式判据必漏)。
         public bool ModalOpen { get { return modal != null && modal.childCount > 0; } }
+
+        // v0.92:暂停中(ScavengingPhase / IslandWalk 的 Update 开头都问这一条)
+        public bool Paused { get { return PauseMenu.Paused; } }
+
+        // v0.92(用户:"按下esc(不管是在拾荒阶段还是在生存阶段,即开始游戏之后)出现暂停菜单,游戏自动暂停")
+        //   Esc 的三条出路:暂停中 ⇒ 设置页里退一层/暂停菜单上继续;玩着 ⇒ 有面板先关面板(老行为,
+        //   键位表写着"Esc 关闭面板"),没面板才开暂停菜单。标题屏/结局屏不接 Esc(它们有自己的键盘入口)。
+        //   ⚠ 过场期间不弹:坠机/影怪跳杀/各结局过场正演着,一弹暂停镜头和 Timeline 就打架。
+        void Update()
+        {
+            if (PauseMenu.Paused)
+            {
+                if (Input.GetKeyDown(KeyCode.Escape)) PauseMenu.Esc(this);
+                return;
+            }
+            if (state.phase != RunPhase.Scavenging && state.phase != RunPhase.Island) return;
+            // 过场总闸走 `CutsceneGate.Any()`:那份"六个一起认"的名单放在那一处 —— 自检把
+            //   GameRoot.cs 里每个结局过场标志的出现次数钉死为 2(ApplyIslandView / KeepIslandView
+            //   那两处镜头让位),这里再各引一次就会变成 3。
+            if (CutsceneGate.Any()) return;
+            if (!Input.GetKeyDown(KeyCode.Escape)) return;
+            if (ModalOpen) ClearModal();
+            else PauseMenu.Open(this);
+        }
 
         void DestroyPhase()
         {
@@ -129,7 +156,9 @@ namespace SixtySLike
             //   不挡会怎样:`Refresh()` 每重画一次就调一次本函数,相机被一次次拽回 CameraPose ⇒ 人一走镜头就弹回去,
             //   正是 §11-84⑤ 点名的"这条每帧校正必须让位"。
             //   回固定视角那条路仍然是这里 —— `IslandWalk.Off()` 先关 `Active` 再调过来,所以顺序不会把自己挡死。
-            if (IslandWalk.Active) return;
+            // v0.79:A/H 结局过场期间镜头归 `ShipEndingCutscene` 管 —— 这条闸与自由视角同一条口径。
+            // v0.81:直升机那一镜同理(`HelicopterEndingCutscene`)。
+            if (IslandWalk.Active || ShipEndingCutscene.Active || HelicopterEndingCutscene.Active || GullEndingCutscene.Active || BonesEndingCutscene.Active || ShadowScareCutscene.Active) return;
             if (islandStage == null || islandStage.cameraPose == null || cam == null)
             {
                 Debug.LogError("[60slike] 荒岛镜头摆不出来:islandStage=" + (islandStage != null) +
@@ -180,7 +209,9 @@ namespace SixtySLike
         // 相机已经挂在 CameraPose 底下了,这里只把"被谁拖走的局部值"归零。静默:每帧跑。
         public void KeepIslandView()
         {
-            if (IslandWalk.Active) return;      // v0.53 §11-84⑤:自由视角期间不要每帧把相机按回 CameraPose
+            // v0.53 §11-84⑤:自由视角期间不要每帧把相机按回 CameraPose。
+            // v0.79:A/H 结局过场同理(否则镜头每帧被拽回固定机位,飞向甲板那一段根本演不出来)。
+            if (IslandWalk.Active || ShipEndingCutscene.Active || HelicopterEndingCutscene.Active || GullEndingCutscene.Active || BonesEndingCutscene.Active || ShadowScareCutscene.Active) return;
             if (islandStage == null || islandStage.cameraPose == null || cam == null) return;
             if (cam.transform.parent != islandStage.cameraPose) { ApplyIslandView("KeepIslandView"); return; }
             if (cam.transform.localPosition != Vector3.zero) cam.transform.localPosition = Vector3.zero;
@@ -251,28 +282,19 @@ namespace SixtySLike
             Ui.Button(rt, "credits", "致谢", 20, OpenCredits,
                       new Color(0.24f, 0.34f, 0.3f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                       new Vector2(10, -560), new Vector2(250, -510));
+            // v0.92(用户:"开始界面要有一个退出游戏的按钮"):多一步确认 —— 标题屏这一下没有任何可丢的东西,
+            //   但手滑点到不该直接退出桌面。暂停菜单里那颗同名按钮是"退出这一局回标题",不是同一个动作。
+            Ui.Button(rt, "quit", "退出游戏", 20, ConfirmQuit,
+                      new Color(0.34f, 0.17f, 0.16f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                      new Vector2(-250, -630), new Vector2(250, -580));
             // v0.61 文案收口:右下角那行 "demo:…| 开发文档 v0.x(尚未正式版本)" **删掉** —— 它是给我们看的调试戳,
             //   不是给玩家看的文案;版本号只留在开发文档里。
         }
 
-        // ---- v0.61 设置子页 ----
+        // ---- v0.61 设置子页(v0.92:画面/音效两组搬去 `SettingsPage.AppendVideoAudio`,右栏) ----
         InputField setNameInput;
-        UnityEngine.UI.Button setDateBtn, setVolBtn;
+        UnityEngine.UI.Button setDateBtn;
         Text claimedHint;
-
-        static readonly float[] VolSteps = { 0f, 0.35f, 0.7f, 1f };
-        static readonly string[] VolNames = { "关", "低", "中", "高" };
-
-        static int VolIndex()
-        {
-            int best = 0; float bd = 9f;
-            for (int i = 0; i < VolSteps.Length; i++)
-            {
-                float d = Mathf.Abs(VolSteps[i] - Music.Volume);
-                if (d < bd) { bd = d; best = i; }
-            }
-            return best;
-        }
 
         void OpenSettings()
         {
@@ -310,30 +332,27 @@ namespace SixtySLike
                                    new Vector2(20, -190), new Vector2(340, -150));
             RefreshDateMode();
 
-            setVolBtn = Ui.Button(box, "volume", "", 16, () =>
-            {
-                Music.SetVolume(VolSteps[(VolIndex() + 1) % VolSteps.Length]);
-                RefreshVolume();
-            }, new Color(1, 1, 1, 0.10f), new Vector2(0, 1), new Vector2(0, 1),
-               new Vector2(20, -240), new Vector2(340, -200));
-            RefreshVolume();
+            // v0.92(用户:"设置页面可以设置画面/音效…"):画面 + 音效 五行走 **右栏**(x 370..-20),
+            //   左栏留给 姓名/日期/重置。BGM 音量也从左栏搬进右栏的音效组(它本来就是音效的一项)。
+            SettingsPage.AppendVideoAudio(box, root, 370f, -20f, -84f);
 
             Ui.Button(box, "resetClaimed", "重置真结局记录", 16, () =>
             {
                 SaveData.ResetTrueClaimed();
                 RefreshClaimed();
             }, new Color(1, 1, 1, 0.10f), new Vector2(0, 1), new Vector2(0, 1),
-              new Vector2(20, -290), new Vector2(340, -250));
+              new Vector2(20, -240), new Vector2(340, -200));
             claimedHint = Ui.Label(box, "claimed", "", 14, TextAnchor.MiddleLeft, new Color(0.9f, 0.8f, 0.5f),
-                                   new Vector2(0, 1), new Vector2(1, 1), new Vector2(20, -318), new Vector2(-20, -294));
+                                   new Vector2(0, 1), new Vector2(1, 1), new Vector2(20, -270), new Vector2(-20, -246));
             RefreshClaimed();
 
             // 键位:**只读说明表**。改绑是另一轮的活(移动/视角现在走 Unity 的 Axis 名,改绑要把输入换成按键轮询)
+            //   v0.92:Esc 现在是 关面板/暂停菜单 两用,键位表跟着改。
             Ui.Label(box, "keys",
                      "键位(暂不支持改绑)\n拾荒:W A S D 移动 · 鼠标 转视野 · 左键 锁定/放开光标 · E 拾取与使用 · Q 在舱门投递\n" +
-                     "荒岛:鼠标 点选物体 · E 走近交互 · V 固定/自由视角 · 左 Shift 奔跑(自由视角) · Tab 行动面板 · Esc 关闭面板",
+                     "荒岛:鼠标 点选物体 · E 走近交互 · V 固定/自由视角 · 左 Shift 奔跑(自由视角) · Tab 行动面板 · Esc 关面板/暂停菜单",
                      14, TextAnchor.UpperLeft, new Color(0.7f, 0.74f, 0.8f),
-                     new Vector2(0, 1), new Vector2(1, 1), new Vector2(20, -470), new Vector2(-20, -330));
+                     new Vector2(0, 1), new Vector2(1, 1), new Vector2(20, -470), new Vector2(-20, -380));
 
             Ui.Button(box, "close", "返回", 16, () => root.ClearModal(), new Color(1, 1, 1, 0.12f),
                       new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-70, 16), new Vector2(70, 52));
@@ -354,9 +373,26 @@ namespace SixtySLike
                 : "日记日期格式:第 12 天(点击切换为 D12)");
         }
 
-        void RefreshVolume()
+        // v0.92:标题屏「退出游戏」的确认窗 —— 真退出桌面(打包后生效)。
+        //   ⚠ 编辑器里 Application.Quit 是空操作:打一条日志,别让人以为按钮坏了。
+        void ConfirmQuit()
         {
-            Ui.SetButtonText(setVolBtn, "音乐音量:" + VolNames[VolIndex()] + "(点击切换)");
+            root.ClearModal();
+            var m = root.modal;
+            Ui.Panel(m, "dim", new Color(0, 0, 0, 0.82f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var box = Ui.Panel(m, "quitBox", new Color(0.12f, 0.14f, 0.18f, 1f),
+                               new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                               new Vector2(-260, -95), new Vector2(260, 95));
+            Ui.Label(box, "q", "退出游戏?", 24, TextAnchor.MiddleCenter, Color.white,
+                     new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -56), new Vector2(0, -20));
+            Ui.Button(box, "yes", "退出", 18, () =>
+            {
+                Debug.Log("[60slike] 退出游戏(打包后生效;编辑器里请直接停止 Play)。");
+                Application.Quit();
+            }, new Color(0.55f, 0.18f, 0.16f, 1f), new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+               new Vector2(-230, -165), new Vector2(-30, -115));
+            Ui.Button(box, "no", "再玩一会", 18, () => root.ClearModal(), new Color(1, 1, 1, 0.12f),
+                      new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(30, -165), new Vector2(230, -115));
         }
 
         // §5.3 那 15 件彩蛋/暗线件 —— **唯一一份名单**。按钮上的进度与页里的列表都读它,

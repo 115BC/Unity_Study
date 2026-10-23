@@ -340,10 +340,12 @@ namespace SixtySLike
                 "v0.19:它取代了原来散刷的 信号弹 —— 枪不会被消耗、也不会坏,进箱时自带 1 发 信号弹。没有它就打不出任何弹(土制信号弹 也要用它)。",
                 o => { o.tradeable = true; });
             Flare = Item("flare", "信号弹", 1, 0, 0, false,
-                "v0.19:它现在是 信号枪 的弹药,开局不再散刷(枪自带 1 发)。每发只能用一次;搜寻飞机线要两发。",
+                "v0.19:它现在是 信号枪 的弹药,开局不再散刷(枪自带 1 发)。每发只能用一次;搜寻直升机线要两发。",
                 o => { o.consumable = true; });
-            MedKit = Item("medkit", "医疗箱", 2, 1, 1, true, "一次性:治好 生病/受伤 或 回 1 生命。",
-                o => { o.consumable = true; o.curesSickness = true; o.hpRestore = 1; });
+            // v0.86(用户:"使用医疗包除了去除异常状态还要恢复所有生命值"):治病与回满 **一起做**。
+            //   `hpRestore` 表达不了"回满",所以不在数据里填一个会过期的上限值,实际结算在 `IslandPhase.UseMedKit`。
+            MedKit = Item("medkit", "医疗箱", 2, 1, 1, true, "一次性:治好 生病,并且把生命回满。",
+                o => { o.consumable = true; o.curesSickness = true; });
 
             // ---- §5.2 工具(修理价 = 补录⑦ 定案;钓竿/手电筒永不挂损坏,v0.12)----
             FishingRod = Tool("rod", "钓鱼竿", 2, 1, 1, true, 0, 0, true, 0f,
@@ -429,7 +431,7 @@ namespace SixtySLike
                 Recipe("wall", "庇护所围墙", 5, 3, null, true, false,
                     "v0.16:围墙在的时候 涨潮 与 毒蛇 直接不进夜。v0.24:尸骨已独立成 骸骨 事件,与这场无关。v0.46(用户):**它也会坏** —— 每挡下一场就算一次使用,按 §2.3 标准累积概率掷(20% 起、每次 +10%、上限 90%);裂了白天修(材料3 + 1 体力)。另外 影怪之夜躲被子 QTE 判定窗口 +20%,这条同样随它裂掉而失效。"),
                 Recipe("signalfire", "信号火堆", 6, 2, null, true, false,
-                    "v0.64:它 **不是 篝火 之外多出来的一摊**,而是把那一堆垒高 —— 建起它,篝火 那一档从账上退场,营地里永远只有一堆火(同一格、身量 2.4 米、v0.65 复用 篝火 的模型放大一档)。必须先有 篝火(§6 唯一的一道前置),价 材料6 + 2 体力;**v0.65:这一手不吃火种**(它是垒高,不是重新点火),建好照样当场点着、烧两个晚上。烧着的那几晚 轮船/幽灵船/搜寻飞机 直接判定通过(结局A / H);两晚过或被 涨潮 打湿 ⇒ 进入「坏」,维修面板里「重新点燃」= 一块火种(那才是「点火」)。",
+                    "v0.64:它 **不是 篝火 之外多出来的一摊**,而是把那一堆垒高 —— 建起它,篝火 那一档从账上退场,营地里永远只有一堆火(同一格、身量 2.4 米、v0.65 复用 篝火 的模型放大一档)。必须先有 篝火(§6 唯一的一道前置),价 材料6 + 2 体力;**v0.65:这一手不吃火种**(它是垒高,不是重新点火),建好照样当场点着、烧两个晚上。烧着的那几晚 轮船/幽灵船/搜寻直升机 直接判定通过(结局A / H);两晚过或被 涨潮 打湿 ⇒ 进入「坏」,维修面板里「重新点燃」= 一块火种(那才是「点火」)。",
                     o => o.requiresStructure = Database.Campfire),
                 Recipe("rod", "钓鱼竿", 4, 2, FishingRod, false, false,
                     "v0.21:钓竿也能做了(材料4 + 2 体力,你定的价)。它永不损坏,所以这是一次买断;简易钓钩 已整件删除。手上已经有一根时这一行不出现。"),
@@ -485,9 +487,12 @@ namespace SixtySLike
             //   与原来这三行不符 —— 它们把 `epilogueIfTrueClaimed` 写成 [通用句, 点睛句],**专属描写那一行丢了**,
             //   于是"打过 T 的存档"反而读不到 A/B/H 各自那句专属描写。这里按文档那句改回来:
             //   **claimed 版 = [这一格自己的专属描写, Claimed]**(最后一句被换掉,前面照旧)。
+            // v0.82(用户:"飞机获救的文案要修改适配,当前的动画不错"):
+            //   A 是轮船/直升机共用的,第一句原写"船靠了岸" ⇒ 直升机那条读起来对不上。
+            //   改成不点名交通工具的"你离开了那座岛",第二句(以及 T 后的点睛句)不动。
             endingTable.Add(Ending(EndingId.A, "A · 获救",
-                new[] { "船靠了岸。有人给你披上毯子,问你叫什么名字。", Fake },
-                        new[] { "船靠了岸。有人给你披上毯子,问你叫什么名字。", Claimed }));
+                new[] { "你离开了那座岛。有人给你披上毯子,问你叫什么名字。", Fake },
+                        new[] { "你离开了那座岛。有人给你披上毯子,问你叫什么名字。", Claimed }));
             endingTable.Add(Ending(EndingId.B, "B · 五十天",
                 new[] { "第五十天的日出照常升起。你已经不再数日子了。", Fake },
                         new[] { "第五十天的日出照常升起。你已经不再数日子了。", Claimed }));
@@ -608,6 +613,23 @@ namespace SixtySLike
                           " 条(机会有多大 / 掷 / 概率 这类写法已从 夜晚选项括号、事件描述、彩蛋说明 里摘掉;" +
                           "代价与收益的数字照旧留着)。");
 
+            // v0.84 迁移(用户:"武器a的文案要换,改成诡异的月光吧" / "假队友的文案也要改" / 影怪 QTE 改迷宫):
+            //   菜单① 仍然"已有的不覆盖" ⇒ 只改 `Ev()` / `Ch()` 的字面量不改盘上那两份资产。
+            //   这里按资产文件名改 **名字与按钮标签**;描述 / 括号提示由上面 `RefreshPlayerText()` 统一刷。
+            RenameEvent("weapona", "诡异的月光");
+            RenameEvent("fakemate", "营地边的人影");
+            RenameChoice("fakemate_flashlight", "用手电筒照过去");
+            RenameChoice("shadow_hide", "裹着毯子逃");
+
+            // v0.91(用户:"删去队友引走影怪的分支"):菜单① 已有的不覆盖 ⇒ `shadow.asset` 的选项列表里
+            //   还串着 `shadow_lure`。这里只把引用摘掉(资产文件留着无害,删 Assets/Data 重跑 ① 也不会再生成它)。
+            RemoveChoice("shadow", "lure");
+
+            // v0.86(用户:"使用医疗包除了去除异常状态还要恢复所有生命值"):
+            //   物品说明从"治病 **或** 回 1 生命"改成"治病 + 回满"。它不是彩蛋、收集页不显示,
+            //   但资产上的 `desc` 是 Inspector 里的效果文档 —— 只改烘焙表不迁移,盘上会继续写着旧结算。
+            SetItemDesc("medkit", "一次性:治好 生病,并且把生命回满。");
+
             EditorUtility.SetDirty(db);
             AssetDatabase.SaveAssets();
             Debug.Log("[60slike] 数据资产就绪:" + DatabaseAsset + "(本次新建 " + created + " 个)");
@@ -636,6 +658,46 @@ namespace SixtySLike
             return n;
         }
 
+        // v0.84 迁移专用:按 **资产文件名** 改事件名 / 选项标签(菜单① 不覆盖已有资产,所以必须显式迁)。
+        static void RenameEvent(string key, string name)
+        {
+            var e = AssetDatabase.LoadAssetAtPath<GameEventSO>(Events + "/" + key + ".asset");
+            if (e == null || e.displayName == name) return;
+            Debug.Log("[60slike] v0.84 迁移:事件 " + key + " 的名字 \"" + e.displayName + "\" → \"" + name + "\"。");
+            e.displayName = name;
+            EditorUtility.SetDirty(e);
+        }
+
+        static void SetItemDesc(string file, string desc)
+        {
+            var it = AssetDatabase.LoadAssetAtPath<ItemSO>(Items + "/" + file + ".asset");
+            if (it == null || it.desc == desc) return;
+            Debug.Log("[60slike] v0.86 迁移:物品 " + file + " 的说明 → \"" + desc + "\"。");
+            it.desc = desc;
+            EditorUtility.SetDirty(it);
+        }
+
+        static void RenameChoice(string file, string label)
+        {
+            var c = AssetDatabase.LoadAssetAtPath<GameChoiceSO>(Choices + "/" + file + ".asset");
+            if (c == null || c.label == label) return;
+            Debug.Log("[60slike] v0.84 迁移:选项 " + file + " 的按钮 \"" + c.label + "\" → \"" + label + "\"。");
+            c.label = label;
+            EditorUtility.SetDirty(c);
+        }
+
+        // v0.91:从某个事件的选项列表里摘掉一条(资产文件不删)。
+        static void RemoveChoice(string eventFile, string choiceKey)
+        {
+            var e = AssetDatabase.LoadAssetAtPath<GameEventSO>(Events + "/" + eventFile + ".asset");
+            if (e == null || e.choices == null) return;
+            int n0 = e.choices.Count;
+            e.choices.RemoveAll(c => c != null && c.key == choiceKey);
+            if (e.choices.Count == n0) return;
+            Debug.Log("[60slike] v0.91 迁移:事件 " + eventFile + " 的选项列表里摘掉「" + choiceKey + "」。");
+            EditorUtility.SetDirty(e);
+        }
+
         // ---- §3.2 事件表 ----
         static List<GameEventSO> BuildEvents(Database db)
         {
@@ -653,7 +715,9 @@ namespace SixtySLike
             Ch(BloodMoon, "dive", "趁退潮下水", P("bloodmoon_dive"));
             Ch(BloodMoon, "nothing", "什么都不做", "队友精神降 1 层", c => c.alwaysAvailable = true);
 
-            var SearchPlane = Ev("searchplane", "搜寻飞机", "远处有机影掠过。这是手电筒唯一的营救判定窗口之一。", 12, true);
+            // v0.81(用户:"都换"):获救线分轮船 / 直升机 —— 事件名与描述一起换成直升机。
+            //   key 仍是 `searchplane`(存档字段、日记键、`NightResolver` 都认它,改 key 是另一回事)。
+            var SearchPlane = Ev("searchplane", "搜寻直升机", "远处有旋翼声掠过。这是手电筒唯一的营救判定窗口之一。", 12, true);
             Ch(SearchPlane, "flare", "打出信号弹", P("searchplane_flare"), c => c.consumesItem = true);
             Ch(SearchPlane, "firepile", "点亮信号火堆", "只在 信号火堆 灭着的那一晚给:当场点着它(花火种)+ 记下第一发。烧着的那两晚它自己就免检(v0.47)", c => c.requiresStructure = Database.SignalFire);
             Ch(SearchPlane, "flashlight", "手电筒照射", P("searchplane_flashlight"), c => c.drainsFlashlight = true);
@@ -693,6 +757,10 @@ namespace SixtySLike
             var SmallShadow = Ev("smallshadow", "小影怪", "比影怪小一号的黑影,只有一点眼光,绕着营地转。", 5, true);
             Ch(SmallShadow, "watch", "守夜", P("smallshadow_watch"), c => c.nextDayStaminaPenalty = 2);
             Ch(SmallShadow, "fire", "点着火硬撑", P("smallshadow_fire"), c => c.requiresFire = true);
+            // v0.91(用户:"使用手电筒则让影怪直接消失(两个影怪都有效)"):小影怪 也开这一条。
+            //   结算侧 `Special/case "smallshadow"` 只落"队友没事",电量由通用 `drainsFlashlight` 扣。
+            Ch(SmallShadow, "flashlight", "用手电筒照它", P("smallshadow_flashlight"),
+               c => c.drainsFlashlight = true);
             Ch(SmallShadow, "nothing", "啥也不做 / 躲起来", "队友被杀,永久消失(唯一硬杀队友的事件)", c => c.alwaysAvailable = true);
             // v0.66(用户:"**小影怪的直接睡觉和正常的尝试睡去合并**")⇒ 这一条整件删除:
             //   原来那条 `sleepalone`(requiresNoTeammate)与通用「尝试睡去」走的是 **同一个结算分支**
@@ -742,16 +810,16 @@ namespace SixtySLike
             }
             AddVariants(Rain, rainVariants, new[] { 3, 2, 1 });   // Rain 已有变体就不再写,保留 Inspector 里的权重改动
 
-            var WeaponA = Ev("weapona", "武器a", "月亮亮得不正常,光直直地照进庇护所,躺下就头疼。(标题就是这三个字符,不解释)", 6, true);
+            var WeaponA = Ev("weapona", "诡异的月光", "月亮亮得不正常,光直直地照进庇护所。躺下就头疼。", 6, true);
             Ch(WeaponA, "umbrella", "用雨伞遮挡", "全游戏唯一解:毯子不能遮。本次必损",
                 c => { c.requiresItem = Umbrella; c.breakChanceNight = 1f; });
             Ch(WeaponA, "硬挨", "硬挨", "次日体力 -2(不提供第三选项)",
                 c => { c.nextDayStaminaPenalty = 2; c.alwaysAvailable = true; });
 
-            var FakeMate = Ev("fakemate", "假队友", "一个看不清的人影站在营地边,说他不舒服。v0.45:营地里没有队友 ⇒ 这一晚它根本不会出现。", 5, true);
-            Ch(FakeMate, "flashlight", "用手电筒照他", P("fakemate_flashlight"),
+            var FakeMate = Ev("fakemate", "营地边的人影", "营地边站着一个人影。它背对着你,声音很低,说自己不太舒服。", 5, true);
+            Ch(FakeMate, "flashlight", "用手电筒照过去", P("fakemate_flashlight"),
                 c => { c.drainsFlashlight = true; c.breakChanceNight = 0f; });
-            Ch(FakeMate, "nothing", "不照", "真伪其实早已决定,手电筒只是告诉你答案", c => c.alwaysAvailable = true);
+            Ch(FakeMate, "nothing", "不照", P("fakemate_nothing"), c => c.alwaysAvailable = true);
 
             // ---- 不入轮:独立掷 / 强制插播 ----
             // v0.24:骸骨 —— 你要求的"不要和普通的涨潮放一起"。整局一次,每晚掷一次直到它出现;
@@ -784,9 +852,8 @@ namespace SixtySLike
             Ch(Shadow, "spear", "鱼叉硬挡", "玩家免伤,鱼叉本次必坏",
                 c => { c.requiresItem = Spear; c.breakChanceNight = 1f; });     // §2.3 挡灾型:硬挡影怪 = 必坏(v0.12:唯一的会坏硬挡件)
             Ch(Shadow, "flashlight", "手电筒硬挡", "玩家免伤;用掉 1 格电(不触发营救判定)", c => c.drainsFlashlight = true);
-            Ch(Shadow, "hide", "躲进被子里屏息", "QTE 单次:成功 = 伤害减半并向上取整");
-            Ch(Shadow, "lure", "引开影怪", "有队友时可选:该队友永久消失,玩家免伤", c => c.requiresTeammate = true);
-            Ch(Shadow, "nothing", "什么都不做", "篝火在烧 -2 生命;没有火 -3 生命", c => c.alwaysAvailable = true);
+            Ch(Shadow, "hide", "裹着毯子逃", P("shadow_hide"));
+            Ch(Shadow, "nothing", "什么都不做", P("shadow_nothing"), c => c.alwaysAvailable = true);
 
             var TwoLights = Ev("twolights", "两点光", "影怪过后的夜晚,庇护所外出现两点光。(补救窗口,§11-9)", 0, false);
             Ch(TwoLights, "offer", "把箱子推过去", "需要 箱 + 钥匙 → 真结局 T");
@@ -2001,7 +2068,8 @@ namespace SixtySLike
         {
             // —— 夜晚选项按钮上那一句(18 条;代价与收益的数字都留着,摘掉的只有"机会有多大")——
             { "bloodmoon_dive",         "有机会捞回 1~3 份罐头,运气好还能摸到藏宝图。代价:次日体力上限 -1(领航员免)" },
-            { "fakemate_flashlight",    "照下去才分得清真伪;那确实是个病人的话,队友必定进入生病。用掉 1 格电" },
+            { "fakemate_flashlight",    "光照过去才看得清那是什么;如果真的是队友病了,他/她会病倒。用掉 1 格电" },
+            { "fakemate_nothing",       "你没有照 —— 不会知道那是什么,也不会有别的事发生" },
             { "fishschool_hand",        "3 份罐头;鱼叉照常会坏 —— 用得越多越容易坏" },
             { "fishschool_net",         "2 体力 → 3 份罐头;渔网会坏,而且它比 鱼叉 更容易坏" },
             { "ghostship_flare",        "→ 结局H·幽灵船的乘客(土制弹可能哑火 = 错过)" },
@@ -2012,15 +2080,21 @@ namespace SixtySLike
             { "rain_heavy_umbrella",    "免于生病;伞多半会坏掉" },
             { "rain_storm_umbrella",    "免于生病;伞必坏,还搭上次日体力 -1" },
             { "searchplane_flare",      "消耗 1 发(土制弹可能哑火)→ 第一发;第二发等它下一次从轮空池里轮上来(v0.27)" },
-            { "searchplane_flashlight", "照得着就把人换回来(结局A);用掉 1 格电" },
+            // v0.82:手电筒恢复两轮 ⇒ 旧句"照得着就把人换回来"在第一轮已经不成立。
+            { "searchplane_flashlight", "第一次照只让它记下你;第二次照才把人换回来(结局A);每次用掉 1 格电" },
             { "ship_flare",             "单阶段:1 发即结局A(土制弹可能哑火 = 错过)" },
             { "ship_flashlight",        "照得着就走(结局A);落空 = 错过,这条船永久不再来" },
             { "smallshadow_fire",       "队友不一定撑得住;火本次必熄" },
+            { "smallshadow_flashlight", "它当场消失,队友没事;用掉 1 格电" },
             { "smallshadow_watch",      "队友必定存活;次日体力 -2" },
             // v0.75(用户 v0.71 ⑦「改」):迷宫那一轮一起换的词。**不写概率、不写秒数**(屏上本来就有倒计时)。
             { "snake_swat",             "点下去会惊动它:你得在营地的缝隙里跑到出口,慢了就被咬" },
+            { "shadow_hide",            "要有毯子:跑到出口 = 伤害减半;被追上或超时 = 全额伤害" },
+            { "shadow_nothing",         "没有火:-3 生命" },
             // —— 夜晚屏那句事件描述 ——
             { "rain",                   "云压得很低。" },     // 原来后面还挂着"内部按 3:2:1 掷档"= 机制,不给玩家看
+            { "weapona",                "月亮亮得不正常,光直直地照进庇护所。躺下就头疼。" },
+            { "fakemate",               "营地边站着一个人影。它背对着你,声音很低,说自己不太舒服。" },
             // —— 收集页右栏的彩蛋说明(10 条;"整局最多一次"这种次数上限不是概率,留着)——
             { "badge",      "影怪之夜的第二天清晨,它可能被冲上来(整局最多一次;那一晚如果直接献宝结束就没有它)。正面是海事保险公司的标。" },
             { "boarding",   "探索荒岛的杂物(整局最多一次)。日期就是起飞那天,座位号对应着你身边那把空吊床。" },
@@ -2031,7 +2105,7 @@ namespace SixtySLike
             { "monkeygift", "友善的狐狸做成交易之后的第二天清晨,它可能被留下(整局最多一次)。它拿走一样、留下一样 —— 不像交易,像上供。" },
             { "raft",       "任一次涨潮之后的第二天清晨,它可能被冲上来(整局最多一次)。有人试过离开,而且没有走远。" },
             { "tally",      "跨局彩蛋:只有 这个存档已经掉进过 结局F 时,才可能在开局第一个清晨出现。每一笔是一次回环。" },
-            { "twonames",   "任一队友永久消失之后,它可能出现(整局最多一次)。饥荒 / 自杀 / 小影怪 / 引开影怪 四条路都算。" },
+            { "twonames",   "任一队友永久消失之后,它可能出现(整局最多一次)。饥荒 / 自杀 / 小影怪 三条路都算。" },
         };
 
         static string P(string id)

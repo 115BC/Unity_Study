@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: nothing
   label: "\u4E0D\u7167"
-  resultHint: "\u771F\u4F2A\u5176\u5B9E\u65E9\u5DF2\u51B3\u5B9A,\u624B\u7535\u7B52\u53EA\u662F\u544A\u8BC9\u4F60\u7B54\u6848"
+  resultHint: "\u4F60\u6CA1\u6709\u7167 \u2014\u2014 \u4E0D\u4F1A\u77E5\u9053\u90A3\u662F\u4EC0\u4E48,\u4E5F\u4E0D\u4F1A\u6709\u522B\u7684\u4E8B\u53D1\u751F"
   requiresItem: {fileID: 0}
   requiresItemAlt: {fileID: 0}
   requiresFire: 0

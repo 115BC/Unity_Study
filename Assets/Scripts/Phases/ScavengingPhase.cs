@@ -35,6 +35,10 @@ namespace SixtySLike
         // v0.62(用户:"**背包改为3格**"):携带条 3 格。⚠ 连带裁定:潜水装置 4 格 → **3 格**(否则 3 格背包永远带不走它,
         //   潜水线在拾荒层就死了);3 格 = 装满一整趟,与 v0.x 那条"满趟独占"的原意一致。
         public const int CarrySlots = 3;
+        // v0.90(用户:"每有一个栏被占用则速度减少10%,当手满的时候速度只有70%(捡起队友不再特殊化)"):
+        //   移速只由 **占了几格** 决定 —— 队友与物品走同一条算式(队友抓起来占满 CarrySlots 格),
+        //   不再有 `teammateSpeedPenalty` 那个 30% 特例。
+        public const float SpeedPenaltyPerSlot = 0.10f;
 
         CharacterController cc;
         Transform playerT;      // ⚠ 距离判定一律用它:本 MonoBehaviour 挂在 phase 根上,它永远在 (0,0,0)
@@ -133,7 +137,7 @@ namespace SixtySLike
 
             // 人、危险物先落位并占位:物品循环里的 0.74 间距只比对 placed,
             // 不先把它们塞进去就会刷出"物品嵌在队友肚子里/标签压在火焰上"
-            // 三名队友全部刷出,但整局只能背走 1 名(抓取占满 4 格)。
+            // 三名队友全部刷出,但整局只能背走 1 名(抓取占满 CarrySlots 格)。
             // p 是脚下的面(y=0 地板),AddPickup 会自己把人立起来;都站在中央过道上,
             // 两侧现在是座椅排,不能再把人卡进座椅里
             AddPickup(null, DB.Pilot, new Vector3(-8.6f, 0f, 0f), 0, DB.Pilot.color);
@@ -143,13 +147,38 @@ namespace SixtySLike
             placed.Add(new Vector3(4.4f, 0f, 0f));
             placed.Add(new Vector3(8.9f, 0f, 0f));
 
-            // 火焰 / 漏电:碰到扣 2 秒,摆在过道上才拦得住人
-            AddHazard("火焰", new Vector3(-3.6f, 0.4f, 0f), new Color(1f, 0.35f, 0.15f), true);
-            AddHazard("漏电", new Vector3(3.2f, 0.5f, 0f), new Color(1f, 0.95f, 0.2f), false);
-            AddHazard("火焰", new Vector3(7.6f, 0.4f, 0f), new Color(1f, 0.35f, 0.15f), true);
-            placed.Add(new Vector3(-3.6f, 0f, 0f));
-            placed.Add(new Vector3(3.2f, 0f, 0f));
-            placed.Add(new Vector3(7.6f, 0f, 0f));
+            // 火焰 / 漏电:碰到扣 2 秒,摆在过道上才拦得住人。
+            // v0.90(用户:"火焰/漏电有具体模型吗,还有能改成随机位置生成吗"):
+            //   ① 位置随机:过道内 x∈[-9,9]、z∈[-0.55,0.55],三处彼此 ≥2.8 米;
+            //      避开舱门/玩家出生点(≥2.6/3.0 米)与队友(≥1.7 米)—— 不让人一开局就被堵死。
+            //   ② 随机点也写进 `placed`,物品生成时会按 `hazardSpots` 再让开 1.6 米,避免火烧在货上。
+            var mateSpots = new[]
+            {
+                new Vector3(-8.6f, 0f, 0f), new Vector3(4.4f, 0f, 0f), new Vector3(8.9f, 0f, 0f)
+            };
+            var hazardSpots = new List<Vector3>();
+            for (int i = 0; i < 3; i++)
+            {
+                bool fire = i != 1;                    // 两处火、一处漏电(与原来一致)
+                Vector3 hp = Vector3.zero;
+                bool ok = false;
+                for (int tries = 0; tries < 80 && !ok; tries++)
+                {
+                    hp = new Vector3(UnityEngine.Random.Range(-9f, 9f), 0f, UnityEngine.Random.Range(-0.55f, 0.55f));
+                    if (Flat2(hp, a.playerSpawn.position) < 9f) continue;      // 3 米
+                    if (Flat2(hp, doorPos) < 6.76f) continue;                  // 2.6 米
+                    ok = true;
+                    for (int m = 0; m < mateSpots.Length; m++)
+                        if (Flat2(hp, mateSpots[m]) < 2.89f) { ok = false; break; }   // 1.7 米
+                    if (!ok) continue;
+                    for (int h = 0; h < hazardSpots.Count; h++)
+                        if (Flat2(hp, hazardSpots[h]) < 7.84f) { ok = false; break; } // 2.8 米
+                }
+                if (!ok) hp = new Vector3(i == 0 ? -3.6f : i == 1 ? 3.2f : 7.6f, 0f, 0f);
+                AddHazard(fire ? "火焰" : "漏电", hp, fire ? new Color(1f, 0.35f, 0.15f) : new Color(1f, 0.95f, 0.2f), fire);
+                hazardSpots.Add(hp);
+                placed.Add(hp);
+            }
 
             foreach (var item in DB.scavengedItems)
             {
@@ -181,6 +210,8 @@ namespace SixtySLike
                         p = PointInZone(zone, item.slots);
                         ok = true;
                         foreach (var q in placed) if ((q - p).sqrMagnitude < 0.55f) { ok = false; break; }
+                        // v0.90:物品与随机危险物之间再留 1.6 米(触发盒半径 ~1.05 米),不把货摆进火里。
+                        if (ok) foreach (var hs in hazardSpots) if (Flat2(hs, p) < 2.56f) { ok = false; break; }
                     }
                     if (!ok) continue;
                     if (item.highValue) highValuePerZone[zone]++;
@@ -271,14 +302,41 @@ namespace SixtySLike
         // v0.63(用户:"**漏电/火焰…等文字都不要出现了**")⇒ 方块上那句 "火焰(-2秒)" 不再印字。
         readonly List<GameObject> hazards = new List<GameObject>();
         bool hazardsOn;
+        bool crashing;      // v0.91:坠毁过场期间停掉控制与倒计时,镜头归过场组件
 
         void AddHazard(string name, Vector3 p, Color c, bool fire)
         {
-            var go = World.Primitive(PrimitiveType.Cube, "Hazard_" + name, p, Vector3.one * 0.7f, c, transform, null);
-            var box = go.GetComponent<BoxCollider>();
-            if (box != null) { box.isTrigger = true; box.size = Vector3.one * 2.1f; }
+            // v0.90(用户:"火焰/漏电有具体模型吗"):以前只有一块 0.7 米的纯色方块。
+            //   当时:火 = `campfire`(木堆)、漏电 = `scrap`(废铁),都走 `PlaceModel`。
+            // v0.91(用户:"飞船上的起火用的是篝火模型,只保留火焰即可"):火 **不再摆木堆** ——
+            //   只剩 `World.Sparks(fire:true)` 那一柱火苗 + 点光;漏电照旧用废铁模型。
+            //   ⚠ 判定仍然是 **根上那一个 BoxCollider trigger**(2.1 立方,中心抬 0.55 米),
+            //     模型自己的 Collider 一律拆掉 —— 否则根与子体会各扣一次"2 秒"。
+            var go = new GameObject("Hazard_" + name);
+            go.transform.SetParent(transform, false);
+            go.transform.position = p;
+            GameObject model = null;
+            if (!fire)
+            {
+                model = World.PlaceModel(go.transform, "scrap", false, p, Vector3.one * 0.95f);
+                if (model != null)
+                    foreach (var col in model.GetComponentsInChildren<Collider>(true)) Destroy(col);
+                else
+                    World.Primitive(PrimitiveType.Cube, "hazardBody", p + Vector3.up * 0.35f, Vector3.one * 0.7f,
+                                    c, go.transform, null, false);
+            }
+
+            var box = go.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = Vector3.one * 2.1f;
+            box.center = Vector3.up * 0.55f;
+
+            var fxHost = model != null ? model : go;
             var t = go.AddComponent<HazardTrigger>();
-            t.fx = World.Sparks(go, c, fire);
+            t.fx = World.Sparks(fxHost, c, fire);
+            // 火与电弧都要有光:白天也看得见颜色,夜里更像"那一处真的在烧/在漏"。
+            World.PointLight(fxHost, new Vector3(0f, fire ? 0.55f : 0.35f, 0f), c,
+                             fire ? 1.5f : 1.1f, fire ? 5.5f : 4.5f, true);
             t.onHit = () =>
             {
                 timeLeft = Mathf.Max(0, timeLeft - DB.bal.hazardSecondsCost);
@@ -375,8 +433,13 @@ namespace SixtySLike
 
         void Update()
         {
-            if (S.phase != RunPhase.Scavenging) return;
+            // v0.92:暂停闸 —— 倒计时走 unscaledDeltaTime,Time.timeScale=0 管不到它,必须在这里挡掉
+            //   ⚠ 单独占一行:自检 v0.91 ② 精确数 `if (S.phase != RunPhase.Scavenging || crashing) return;`
+            //     在 Update / LateUpdate 各出现一次,并进同一行就会让那个字符串少一处。
+            if (root.Paused) return;
+            if (S.phase != RunPhase.Scavenging || crashing) return;
             HandleLook();
+            ApplyTurbulence();
             HandleMove();
 
             timeLeft -= Time.unscaledDeltaTime;
@@ -394,14 +457,21 @@ namespace SixtySLike
                 timeLeft = 0;
                 if (InExitZone())
                 {
-                    S.Log("倒计时归零:你站在舱门口,身上没投出去的东西丢了,但你活着离开了。");
-                    DropCarried(false);
+                    // v0.92(用户:"放在身上的物品在跳伞的时候也算是存入物资箱了"):归零跳伞与主动跳伞同一口径 ——
+                    //   手上的东西一并入箱,背着的队友照常送上吊床(原来这一路连背着的队友都会静悄悄丢掉)。
+                    S.Log("倒计时归零:你站在舱门口,身上的东西一并存进储物箱,活着离开了。");
+                    Deposit();
                     root.EnterIsland();
                 }
                 else
                 {
                     S.Log("倒计时归零,人不在舱门前 → 坠机死亡(结局C 的专属分支,不是第 8 个结局)。");
-                    root.EndRun(EndingId.C);
+                    // v0.91(用户:"飞机坠毁也做一个动画吧,如果没来得及跳出舱门则播放坠毁动画"):
+                    //   先演完这一镜再结算 —— `EndRun(C)` 在回调里只发生一次。
+                    crashing = true;
+                    if (flashText != null) flashText.text = "";
+                    if (promptText != null) promptText.text = "";
+                    PlaneCrashCutscene.Play(root, transform, () => root.EndRun(EndingId.C));
                 }
                 return;
             }
@@ -420,6 +490,25 @@ namespace SixtySLike
             camT.rotation = Quaternion.Euler(pitch, yaw, 0);
         }
 
+        // v0.90(用户:"开局拾荒的时候可以让飞机摇晃吗")
+        //   纯演出:颠簸只加在 **眼睛** 上 —— `camT` 仍负责 yaw/pitch(移动方向读的也是它),
+        //   这里只让镜头的位置轻微抖、并给相机子物体一点 roll。不改碰撞、不改控制、不碰任何数值。
+        //   越接近坠机越颠(最后 10 秒幅度抬一档),用 Perlin 噪声而不是纯正弦,避免看出"机械节拍"。
+        void ApplyTurbulence()
+        {
+            if (camT == null || root == null || root.cam == null) return;
+            float late = Mathf.Clamp01(1f - timeLeft / TotalSeconds);
+            float amp = 0.018f + 0.032f * late;                 // 5 厘米以内,看得见但不至于晕
+            float t = Time.unscaledTime;
+            float seed = GetInstanceID() * 0.017f;
+            camT.localPosition = new Vector3(
+                (Mathf.PerlinNoise(seed, t * 2.6f) - 0.5f) * 2f * amp,
+                EyeHeight + (Mathf.PerlinNoise(t * 3.1f, seed + 7.3f) - 0.5f) * 2f * amp,
+                (Mathf.PerlinNoise(seed + 3.7f, t * 2.2f) - 0.5f) * amp);
+            float roll = (Mathf.PerlinNoise(t * 1.7f, seed + 11.9f) - 0.5f) * (1.0f + 1.8f * late);
+            root.cam.transform.localRotation = Quaternion.Euler(0f, 0f, roll);
+        }
+
         // 水平距离:架子上的东西(y≈1.05)和地上的该有一样的拾取半径
         static float Flat2(Vector3 a, Vector3 b)
         {
@@ -435,7 +524,9 @@ namespace SixtySLike
 
         void HandleMove()
         {
-            float speed = WalkSpeed * (carryingTeammate ? (1f - DB.bal.teammateSpeedPenalty) : 1f);
+            // 占用格数 = 手上物品的格数之和;抓着队友时携带条已满(CarrySlots 格)。
+            int usedSlots = carryingTeammate ? CarrySlots : S.UsedCarrySlots();
+            float speed = WalkSpeed * Mathf.Max(0f, 1f - SpeedPenaltyPerSlot * usedSlots);
             float h = Input.GetAxisRaw("Horizontal");
             float v = Input.GetAxisRaw("Vertical");
             var dir = (camT.forward * v + camT.right * h);
@@ -527,7 +618,9 @@ namespace SixtySLike
 
         void LateUpdate()
         {
-            if (S.phase != RunPhase.Scavenging) return;
+            // v0.92:暂停闸 —— 与 Update 同一条:提示牌与 E(拾取/投递)/Q(跳伞)在暂停时一起停
+            if (root.Paused) return;
+            if (S.phase != RunPhase.Scavenging || crashing) return;
             if (Time.unscaledTime > flashUntil) flashText.text = "";
 
             var near = Nearest(Reach);
@@ -557,8 +650,10 @@ namespace SixtySLike
             }
             if (Input.GetKeyDown(KeyCode.Q) && inExit)
             {
-                S.Log("主动跳伞:带走 玩家 + 队友 + 储物箱全部;手上没投的东西丢了。");
-                DropCarried(false);
+                // v0.92(用户:"放在身上的物品在跳伞的时候也算是存入物资箱了"):跳伞 = 全带走 ——
+                //   手上的东西一并入箱;背着的队友也从这里送上吊床(原来 Q 跳伞会把背着的队友静悄悄丢掉)。
+                S.Log("主动跳伞:队友 + 手上的东西 + 储物箱全部,一起带走。");
+                Deposit();
                 root.EnterIsland();
             }
         }
@@ -583,7 +678,7 @@ namespace SixtySLike
                 carriedMate = p.mate;
                 Destroy(p.go);
                 pickups.Remove(p);
-                Flash("抓住了 " + p.mate.displayName + "(移速 -30%)");   // 允许:这是代价数值,不是概率(v0.66 裁定只摘概率数字)
+                Flash("抓住了 " + p.mate.displayName + "(携带条已满,移速 -30%)");   // 允许:这是代价数值,不是概率(v0.66 裁定只摘概率数字)
                 return;
             }
             if (carryingTeammate) { Flash("背着人,携带条已经满了"); return; }

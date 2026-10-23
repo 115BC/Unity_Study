@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: shadow_hide
   m_EditorClassIdentifier: 
   key: hide
-  label: "\u8EB2\u8FDB\u88AB\u5B50\u91CC\u5C4F\u606F"
-  resultHint: "QTE \u5355\u6B21:\u6210\u529F = \u4F24\u5BB3\u51CF\u534A\u5E76\u5411\u4E0A\u53D6\u6574"
+  label: "\u88F9\u7740\u6BEF\u5B50\u9003"
+  resultHint: "\u8981\u6709\u6BEF\u5B50:\u8DD1\u5230\u51FA\u53E3 = \u4F24\u5BB3\u51CF\u534A;\u88AB\u8FFD\u4E0A\u6216\u8D85\u65F6
+    = \u5168\u989D\u4F24\u5BB3"
   requiresItem: {fileID: 0}
   requiresItemAlt: {fileID: 0}
   requiresFire: 0

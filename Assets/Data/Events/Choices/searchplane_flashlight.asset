@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: flashlight
   label: "\u624B\u7535\u7B52\u7167\u5C04"
-  resultHint: "\u7167\u5F97\u7740\u5C31\u628A\u4EBA\u6362\u56DE\u6765(\u7ED3\u5C40A);\u7528\u6389
-    1 \u683C\u7535"
+  resultHint: "\u7B2C\u4E00\u6B21\u7167\u53EA\u8BA9\u5B83\u8BB0\u4E0B\u4F60;\u7B2C\u4E8C\u6B21\u7167\u624D\u628A\u4EBA\u6362\u56DE\u6765(\u7ED3\u5C40A);\u6BCF\u6B21\u7528\u6389 1 \u683C\u7535"
   requiresItem: {fileID: 0}
   requiresItemAlt: {fileID: 0}
   requiresFire: 0

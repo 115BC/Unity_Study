@@ -34,15 +34,30 @@ namespace SixtySLike
         public static ItemSO NightTool { get; set; }
 
         public static GameEventSO Current { get { return cur; } }
+        // v0.91:最近一次真正结算的选项 —— 场景层要判"这一晚是不是被影怪打了",
+        //   而"尝试睡去"是 `Sleep()` 替你挑的那一条,场景没有拿到过它 ⇒ 必须由结算侧记下来。
+        public static GameChoiceSO LastChoice { get; private set; }
         public static bool Calm { get; private set; }
         public static EndingId Pending { get; private set; }
         public static bool HasPending { get; private set; }
+        // v0.80:这个 A 是 **搜寻飞机** 给的。结局本身仍是 A(成功获救),但 v0.79 的过场是"邮轮靠岸"——
+        //   一架飞机救了你却开来一艘邮轮,归错线了。⇒ 过场只在 轮船/幽灵船 那条线上播,飞机线直接换结局屏。
+        public static bool PendingByPlane { get; private set; }
+        // v0.83(用户:"点燃篝火应该不会受低温夜影响了" / "篝火和信号火堆应该都能驱赶影怪"):
+        //   火还烧着的夜晚,这两场 **不需要玩家再做什么** —— 在摊开那一刻就解决了。
+        //   `AutoKeepsOffer` 只有一种情况为真:影怪 被火挡住、但 箱+钥匙 在手且没打过 T
+        //   ⇒ 仍要把"把藏宝箱推给它"留给玩家(真结局 T 不能因为火而消失)。
+        public static bool AutoResolved { get; private set; }
+        public static bool AutoKeepsOffer { get; private set; }
+        public static string AutoLine { get; private set; }
 
         // 天亮由场景那层的"尝试睡去"推进,这里不再持有回调
         public static void Begin(GameRoot r)
         {
             root = r; S = r.state; DB = r.db; B = r.db.bal;
-            Calm = false; HasPending = false; Pending = EndingId.None;
+            Calm = false; HasPending = false; Pending = EndingId.None; PendingByPlane = false;
+            AutoResolved = false; AutoKeepsOffer = false; AutoLine = null;
+            LastChoice = null;
             S.Log("—— 第 " + S.day + " 夜 ——");
             shipAlsoHit = false;
 
@@ -91,7 +106,9 @@ namespace SixtySLike
         {
             cur = null; stolen = null; Calm = false;
             tradeGive = null; tradeGot = null;
-            HasPending = false; Pending = EndingId.None;
+            HasPending = false; Pending = EndingId.None; PendingByPlane = false;
+            AutoResolved = false; AutoKeepsOffer = false; AutoLine = null;
+            LastChoice = null;
         }
 
         static bool Roll(float p) { return S.rng.NextDouble() < p; }
@@ -138,6 +155,22 @@ namespace SixtySLike
                 if (++redraws > 8) { redraws = 0; cur = null; Calm = true; return; }  // 兜底:池里只剩这几件
                 Show(NextFromBag()); return;
             }
+            // v0.87(用户:"已经触发海鸥线就不会刷新海鸥的事件了(除非赶走了海鸥)"):
+            //   线已经开过(gullFedOnce)且场上还有海鸥 ⇒ 这一件不再抽到,换轮空池里的下一件;
+            //   海鸥被点光(presentCount == 0,`ScatterGulls`)⇒ **允许它回来**,并且免费补回一只
+            //   —— `ScatterGulls` 那句"下一次海鸥事件它们会免费回来"以前没有任何代码兑现。
+            //   ⚠ 闸放在 `redraws = 0` 之前,与 `BlockedReason` 共用那道上限,避免自己把兜底次数清零。
+            if (e == DB.Gull && S.gull.gullFedOnce)
+            {
+                if (S.gull.presentCount > 0)
+                {
+                    if (++redraws > 8) { redraws = 0; cur = null; Calm = true; return; }
+                    Show(NextFromBag()); return;
+                }
+                S.gull.presentCount = 1;
+                S.gull.refreshP = B.gullRefreshBase;
+                S.Log("那只海鸥又落了下来:线已经开过,不用再喂(在场 1 只)。");
+            }
             redraws = 0;
             cur = e;
             NightTool = null;
@@ -149,8 +182,37 @@ namespace SixtySLike
             {
                 Pending = e == DB.Ghost ? EndingId.H : EndingId.A;
                 HasPending = true;
+                PendingByPlane = e == DB.SearchPlane;
                 S.Diary(DiaryLines.Night(e.key, "signalfire", S.day), DiaryLineKind.Night);
                 S.Log("信号火堆 在沙丘上烧着:它老远就看见了 —— " + e.displayName + " 这一晚不需要你做任何应对(→ 结局" + Pending + ")。");
+                return;
+            }
+            // v0.83(用户:"点燃篝火应该不会受低温夜影响了,检查一下"):火还烧着 ⇒ 低温夜 整夜不成立。
+            //   判据就是已有的 `S.fireLitTonight`(篝火 **或** 信号火堆 还点着),不新开第二个状态。
+            if (e != null && e.key == "coldnight" && S.fireLitTonight)
+            {
+                AutoResolved = true;
+                AutoLine = "营地里的火一直烧着 —— 这一夜不冷,不需要你再做什么。";
+                S.Diary(DiaryLines.Night(e.key, "litfire", S.day), DiaryLineKind.Night);
+                S.Log("低温夜:火还在烧,直接免于受冻。");
+                return;
+            }
+            // v0.83(用户:"篝火和信号火堆应该都能驱赶影怪,检查一下"):火还烧着 ⇒ 影怪 被挡在营地外。
+            //   ⚠ 真结局 T 不能因为火而消失:箱+钥匙 在手且没打过 T 时,仍把"推箱子"这条路留给他
+            //     (`AutoKeepsOffer`);他若不选、直接睡去,才落 `shadow:litfire` 那一句。
+            if (e != null && e.key == "shadow" && S.fireLitTonight)
+            {
+                AutoResolved = true;
+                S.hidden.shadowNightResolved = true;
+                S.hidden.metShadow = true;
+                AutoLine = "火把你的影子钉在营地外:它在火光外站了一夜,没有进来。";
+                AutoKeepsOffer = S.hidden.hasChest && S.hidden.hasKey && !SaveData.trueEndingClaimed;
+                if (!AutoKeepsOffer)
+                {
+                    S.hidden.nextMorningEgg.Add("shadow");
+                    S.Diary(DiaryLines.Night(e.key, "litfire", S.day), DiaryLineKind.Night);
+                }
+                S.Log("影怪:火还在烧 ⇒ 它整夜没有进来。");
                 return;
             }
             stolen = null;
@@ -322,7 +384,10 @@ namespace SixtySLike
         static string BoundTarget(GameChoiceSO c)
         {
             if (c.requiresFire || c.key == "fire" || c.key == "firepile") return "fire";
-            if (c.requiresTeammate || c.key == "watch" || c.key == "lure") return "mate";
+            // v0.84(用户:"小影怪没有守夜的按钮?检查一下"):根因是 `watch` 被绑到队友身上,而点队友只会
+            //   拿到"一条"选项 ⇒ `NightMenu` 按单条自动执行 ⇒ 屏幕上从来没有一个看得见的「守夜」按钮。
+            //   现在它回到 `ChoicesWithoutObject()` 那一列,和"影怪的躲进被子"一样常驻在睡去按钮上方。
+            if (c.requiresTeammate) return "mate";
             if (c.key == "look") return "bones";      // v0.24:骸骨事件 —— "走过去看"绑在沙滩那具骸骨上
             // v0.27:调皮的狐狸 —— "空手抢夺"绑在那只狐狸身上。夜晚它会叼着东西站在营地边,
             //        点它 = 空手扑上去;而 鱼叉/信号枪/篝火 三条各自绑在自己的物件上,所以
@@ -337,8 +402,11 @@ namespace SixtySLike
         static List<GameChoiceSO> AvailableChoices(GameEventSO e)
         {
             var l = new List<GameChoiceSO>();
+            // v0.83:火已经替玩家解决了这一晚 ⇒ 选项一律不生成;唯一例外是 影怪 的"推箱子"(T 不能消失)。
+            if (AutoResolved && !AutoKeepsOffer) return l;
             foreach (var c in e.choices)
             {
+                if (AutoResolved && c.key != "offer") continue;
                 // v0.50(用户:"8.海鸥也可以使用鱼饵触发"):闸门从"没有 A 就不生成"改成 **"A、B 都没有才不生成"**。
                 //   这条以前一直在说谎:标签写着"给它 1 份罐头或鱼饵"、结算也两边都收(`case "gull"`),
                 //   但 `requiresItem` 只绑了 罐头 ⇒ 有鱼饵没罐头的那一晚,这条选项根本不出现。
@@ -352,7 +420,15 @@ namespace SixtySLike
                 if (!string.IsNullOrEmpty(c.requiresStructure) && !S.HasStructure(c.requiresStructure)) continue;
                 if (c.requiresTeammate && !S.mate.present) continue;
                 if (c.requiresNoTeammate && S.mate.present) continue;
+                // v0.84(用户同一条):守夜是"替队友守",没有队友的那一晚不该生成(它以前只在点队友时才出现,
+                //   现在成了常驻按钮,必须自己带这道闸)。
+                if (c.key == "watch" && !S.mate.present) continue;
+                // v0.84(用户:"影怪QTE也改为迷宫吧,需要有毯子才能触发"):毯子是这一条的入场券,
+                //   没有毯子就不生成(选项不生成,不是点了被拒)。⚠ 只要求"有",不额外消耗 —— 用户没点损坏。
+                if (c.key == "hide" && !S.storage.Has(DB.Blanket, 1)) continue;
                 if (c.drainsFlashlight && !Usable(DB.Flashlight, true)) continue;
+                // v0.91:小影怪 的手电筒是"救人"那一手,没有队友可救时不该生成(白扣一格电)。
+                if (e == DB.SmallShadow && c.key == "flashlight" && !S.mate.present) continue;
                 if (c.key == "offer" && (e == DB.Shadow || e == DB.TwoLights)
                     && !(S.hidden.hasChest && S.hidden.hasKey && !SaveData.trueEndingClaimed)) continue;
                 if (e == DB.Ship && c.key == "sail" && !PilotActive()) continue;
@@ -399,6 +475,7 @@ namespace SixtySLike
         public static string Choose(GameChoiceSO c, bool? mazeEscaped = null)
         {
             var log = new StringBuilder();
+            LastChoice = c;
             // 通用字段先走(§7.2:一张 choice 表,不为每件事写 if)
             if (c.costStamina > 0) S.stats.stamina = Mathf.Max(0, S.stats.stamina - c.costStamina);
             if (c.nextDayStaminaPenalty > 0) S.stats.nextDayStaminaPenalty += c.nextDayStaminaPenalty;
@@ -442,6 +519,8 @@ namespace SixtySLike
                 S.Log(cur.displayName + " → 结局触发");
                 Pending = (EndingId)Enum.Parse(typeof(EndingId), head.Substring(4).Trim());
                 HasPending = true;
+                // 只有搜寻飞机 这一条事件会把 A 交出来却不是船救的(手电筒命中 / 第二发信号弹)。
+                PendingByPlane = Pending == EndingId.A && cur != null && cur.key == "searchplane";
                 return cur.displayName + "\n" + log.ToString();
             }
             S.Log(head);
@@ -454,6 +533,17 @@ namespace SixtySLike
         {
             if (Calm) return "今夜无事发生";
             if (cur == null) return "今夜无事发生";
+            // v0.83:火替玩家解决了这一晚 —— "睡去"不再走任何一条选项(尤其不能顺手结算"什么都不做")。
+            //   `AutoKeepsOffer` 那一种(T 还留着)只在这里补写"火挡住了它"的日记。
+            if (AutoResolved)
+            {
+                if (AutoKeepsOffer)
+                {
+                    S.hidden.nextMorningEgg.Add("shadow");
+                    S.Diary(DiaryLines.Night(cur.key, "litfire", S.day), DiaryLineKind.Night);
+                }
+                return AutoLine ?? "今夜无事发生";
+            }
             var list = AvailableChoices(cur);
             foreach (var c in list) if (c.alwaysAvailable && c.key != "trade") return Choose(c);
             foreach (var c in list) if (c.key == "high" || c.key == "nothing" || c.key == "ignore") return Choose(c);
@@ -536,15 +626,20 @@ namespace SixtySLike
                     }
                     if (c.key == "flashlight")
                     {
-                        // v0.43(用户改口):"不管是第几轮,飞机线用手电筒都是 50%" ⇒ v0.42 那个
-                        //   "第一轮不掷、只推进 planeStage"的实现撤销:任何一轮照过去都掷 50%,命中即结局A。
-                        //   两轮这条规矩从此 **只属于信号弹/信号火堆**。落空不关闭这条线(手电筒没电,飞机还会再来)。
-                        // ⚠ 顺带修一处旧文案 bug:命中时原来也会落到 "searchplane:flashlight" 那句
-                        //   ("灯空了,答案还没拿到")—— 获救那一晚写"答案还没拿到"是错的,现在命中走 flashhit。
-                        bool lit = Roll(0.5f);
-                        Diary(lit ? "flashhit" : "flashlight");
+                        // v0.82(用户:"飞机要两轮才会获救,咋现在是一轮?"):恢复 **两轮** ——
+                        //   第一轮只把 `planeStage` 推到 1(灯照样打空、不掷 50%),第二轮才掷 50%。
+                        //   ⚠ 这条 **覆盖 v0.43**("手电筒不分轮次都是 50%"):最新口径是飞机线
+                        //     不分工具都要两层;信号弹/信号火堆本来就是 0→1→第二发。
+                        //   落空不关闭这条线(与 v0.42 一致:灯空了,直升机还会再来)。
+                        bool lit = second && Roll(0.5f);
+                        Diary(!second ? "flashfirst" : (lit ? "flashhit" : "flashlight"));
+                        if (!second)
+                        {
+                            S.rescue.planeStage = 1;
+                            return "光柱扫过去,机影顿了一下 —— 它记下你了。下一次它再来,还得再照一次。";
+                        }
                         if (lit) return "END:A";
-                        return "光柱扫过去,没有回应 —— 这一轮的机会用掉了(手电筒没电,飞机还会再来)。";
+                        return "光柱扫过去,没有回应 —— 这一轮的机会用掉了(电没了,直升机还会再来)。";
                     }
                     if (c.key == "firepile")
                     {
@@ -554,16 +649,16 @@ namespace SixtySLike
                         S.Relight(Database.SignalFire);
                         S.Log("当晚点的是 信号火堆。" + root.island.LightFireStarter());
                         S.rescue.planeStage = 1;
-                        return "火堆烧起来了:机影绕了一圈 —— 它记下这一发,下一次 搜寻飞机 再轮上来时还要第二发(而这堆火会先烧满两晚)。";
+                        return "火堆烧起来了:机影绕了一圈 —— 它记下这一发,下一次 搜寻直升机 再轮上来时还要第二发(而这堆火会先烧满两晚)。";
                     }
                     if (FlareFails(flareKind, log))
                     {
-                        if (second) { S.rescue.planeStage = 2; return "第二发哑火:飞机走了 —— 这一局它不再来了。"; }
+                        if (second) { S.rescue.planeStage = 2; return "第二发哑火:直升机走了 —— 这一局它不再来了。"; }
                         return "信号没有打上去:机影消失了(这一轮的两阶段线作废)。";
                     }
                     if (second) { Diary("flare2"); return "END:A"; }
                     S.rescue.planeStage = 1;
-                    return "第一发打出去了 —— 机影绕了一圈走了。下一次 搜寻飞机 再轮上来时,还得再打一发。";
+                    return "第一发打出去了 —— 机影绕了一圈走了。下一次 搜寻直升机 再轮上来时,还得再打一发。";
                 }
 
                 case "ship":
@@ -658,9 +753,16 @@ namespace SixtySLike
                         S.gull.refreshP = B.gullRefreshBase;
                         return "它吃下了那份" + eat.displayName + ",留在岛上(在场 1 只)。全游戏只需喂这一次,后来的直接来落。";
                     }
-                    return "它飞走了(不算损失,下轮还会来)。";
+                    // v0.87:线开过之后再抽到海鸥,是"被赶走的那批自己回来了",不能再写"下轮还会来"
+                    //   (那时 presentCount 已经补回 1,事件反而不会再抽到)。
+                    return S.gull.gullFedOnce
+                        ? "它落回岛上,自己留下了(在场 " + S.gull.presentCount + " 只;线已经开过,不用再喂)。"
+                        : "它飞走了(不算损失,下轮还会来)。";
 
                 case "smallshadow":
+                    // v0.91(用户:"使用手电筒则让影怪直接消失(两个影怪都有效)"):小影怪也吃这一手 ——
+                    //   它当场散掉,吊床上的人没事;电量由 `Choose` 的通用 drainsFlashlight 扣。
+                    if (c.key == "flashlight") return "手电筒的光扫过去:它散成一片湿气,队友还在睡。";
                     if (!S.mate.present)
                     {
                         S.stats.nextDayStaminaPenalty += 1;
@@ -709,7 +811,7 @@ namespace SixtySLike
                     return "你没有照。它站了一会儿,自己走了 —— 你不会知道那是不是真的。";
 
                 case "shadow":
-                    return Shadow(c, log);
+                    return Shadow(c, log, mazeEscaped);
 
                 case "twolights":
                     if (c.key == "offer") return "END:T";
@@ -719,30 +821,36 @@ namespace SixtySLike
             return "(无事发生)";
         }
 
-        static string Shadow(GameChoiceSO c, StringBuilder log)
+        static string Shadow(GameChoiceSO c, StringBuilder log, bool? mazeEscaped = null)
         {
             S.hidden.shadowNightResolved = true;
             S.hidden.metShadow = true;
             if (c.key == "offer") return "END:T";
             // v0.26 A3:压弯的公司徽章 —— 这一晚只要不是献宝结束,就登记"次日清晨掷 1%"
             S.hidden.nextMorningEgg.Add("shadow");
-            if (c.key == "spear" || c.key == "flashlight") return "你硬挡住了它:玩家免伤(" + (c.key == "spear" ? "鱼叉本次必坏" : "手电筒没电") + ")。";
-            int baseDmg = S.fireLitTonight ? 2 : 3;
-            if (c.key == "lure") { KillMate("引开影怪", log); return "你把影怪引开了:玩家免伤,但那名队友永久消失。"; }
+            // v0.91(用户:"使用手电筒则让影怪直接消失(两个影怪都有效)"):光照过去不再只是"硬挡",
+            //   场上那只影怪由场景层播驱散(marker: `ShadowVanishFx`),这里只落数值与文案。
+            if (c.key == "spear") return "你硬挡住了它:玩家免伤(鱼叉本次必坏)。";
+            if (c.key == "flashlight") return "手电筒的光顶上去,它当场散了:玩家免伤(用掉一格电)。";
+            // v0.84:火还烧着的那一晚在 `Show` 里就自动收口了,走不到这里 ⇒ 这里的"没有火"是唯一路径。
+            const int baseDmg = 3;
             if (c.key == "hide")
             {
-                if (Roll(S.HasStructure(Database.Wall) ? 0.7f : 0.5f))   // 围墙:QTE 判定窗口 +20%
+                // v0.84(用户:"影怪QTE也改为迷宫吧,需要有毯子才能触发"):旧的那次 50%/70% 掷骰整件删除,
+                //   结果只认迷宫跑没跑到出口(与毒虫 swat 同一条 `mazeEscaped` 通道)。
+                //   `null` = 没有迷宫结果(例如别的入口兜底走到这一支)⇒ 按"没跑到出口"结算,不另开一本账。
+                if (mazeEscaped == true)
                 {
                     int d = Mathf.CeilToInt(baseDmg * 0.5f);
-                    Hurt(d, "影怪(躲被子成功)", log);
-                    return "你屏住呼吸:伤害减半并向上取整(-" + d + " 生命)。";
+                    Hurt(d, "影怪(裹着毯子逃出去)", log);
+                    return "你裹着毯子跑到了出口:伤害减半并向上取整(-" + d + " 生命)。";
                 }
-                Hurt(baseDmg, "影怪(躲被子失败)", log);
+                Hurt(baseDmg, "影怪(裹着毯子被追上)", log);
                 Diary("hidefail");
-                return "QTE 失败,按未处理结算:-" + baseDmg + " 生命。";
+                return "它还是追上了你,按未处理结算:-" + baseDmg + " 生命。";
             }
-            Hurt(baseDmg, S.fireLitTonight ? "影怪(火在烧 -2)" : "影怪(无火 -3)", log);
-            return "你什么都没做:" + (S.fireLitTonight ? "火在烧,-2 生命。" : "没有火,-3 生命。");
+            Hurt(baseDmg, "影怪(无火 -3)", log);
+            return "你什么都没做:-3 生命。";
         }
 
         static string Monkey(GameChoiceSO c, StringBuilder log)
@@ -855,7 +963,7 @@ namespace SixtySLike
                 else S.bottle.ghostShipResolved = true;
                 return "光柱扫过去,什么都没有回应 —— 错过即永久,它不再来了。";
             }
-            return "光柱扫过去,没有回应 —— 这一轮的机会用掉了(手电筒没电,飞机还会再来)。";
+            return "光柱扫过去,没有回应 —— 这一轮的机会用掉了(手电筒没电,直升机还会再来)。";
         }
 
         static bool FlareFails(string kind, StringBuilder log)
@@ -974,11 +1082,30 @@ namespace SixtySLike
             Ui.Label(rt, "epi", sb.ToString(), 20, TextAnchor.MiddleCenter, new Color(0.88f, 0.9f, 0.94f),
                      new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -430), new Vector2(0, -210));
 
+            // v0.91 补(用户:"结局出来后没有返回的按钮"):这一格以前贴着画布底边(底 40~90),
+            //   窗口/截图把底部裁掉一截,按钮就整个不见了 ⇒ 现在紧接尾声正文之下(画布高度 61%~69%),
+            //   底部只留统计行。⚠ 键盘兜底见 `Update()`,两道入口各自独立。
+            Ui.Button(rt, "again", "再走一次那 60 秒", 20, () => root.EnterTitle(), new Color(0.8f, 0.35f, 0.25f, 1f),
+                      new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-180, -500), new Vector2(180, -440));
+
             Ui.Label(rt, "stat", StatLine(), 15, TextAnchor.MiddleCenter, new Color(0.6f, 0.65f, 0.72f),
                      new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 120), new Vector2(0, 200));
+        }
 
-            Ui.Button(rt, "again", "再走一次那 60 秒", 20, () => root.EnterTitle(), new Color(0.8f, 0.35f, 0.25f, 1f),
-                      new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-160, 40), new Vector2(160, 90));
+        // v0.91 补:键盘兜底 —— 按钮是主入口,但它再被裁掉/挡住一次也不能把玩家困在结局屏。
+        //   ⚠ 0.5 秒闸:坠机/跳杀过场结束那一下可能还按着方向键或空格,不挡会直接跳过结局屏。
+        float shownAt;
+
+        void Update()
+        {
+            shownAt += Time.unscaledDeltaTime;
+            if (shownAt < 0.5f || root == null) return;
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                Input.GetKeyDown(KeyCode.Escape))
+            {
+                shownAt = -999f;        // 只走一次:EnterTitle 也在本帧末才拆这一层
+                root.EnterTitle();
+            }
         }
 
         List<string> Epilogue(EndingSO e)

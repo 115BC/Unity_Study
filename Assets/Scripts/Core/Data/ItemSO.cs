@@ -28,7 +28,7 @@ namespace SixtySLike
         [Header("吃 / 喝(§2.3)")]
         public int fullnessRestore;      // 罐头 20~30%
         public int staminaRestore;       // 巧克力棒 3
-        public int hpRestore;            // 椰子 1 / 医疗箱
+        public int hpRestore;            // 椰子 1(医疗箱是"回满",在 `IslandPhase.UseMedKit` 里直接写)
         public bool curesSickness;       // 医疗箱 / 自制药品
         // v0.28:hydrationRestore 与 makesSick 已删 —— 它们只属于 淡水/脏水,那两件物品随喝水系统一起移除了。
         //        (盘上旧资产里残留的这两个 key 会被 Unity 直接忽略,不用清。)

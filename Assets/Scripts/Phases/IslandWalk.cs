@@ -120,6 +120,9 @@ namespace SixtySLike
                 if (Active) Off(true);
                 return;
             }
+            // v0.92:暂停闸 —— 走路/转头走 unscaledDeltaTime,timeScale=0 管不到;暂停时连 V/Tab/Esc 都不接
+            //   (Esc 归 GameRoot 那一条:暂停中 Esc = 继续/退一层)。
+            if (root.Paused) return;
             // v0.56(用户:"**夜晚直接切到上帝视角,禁止第一人称**")+ v0.57(用户:"**记录摄像头状态,如果前一天白天为第一人称模式,第二天也为第一人称模式**")
             //   ⇒ **"玩家要哪一路"(`wanted`)与"此刻是哪一路"(`Active`)是两件事,必须分开存**:
             //     夜里把 `Active` 关掉(强制上帝视角),但 `wanted` 保留 ⇒ 天亮自动回到他昨天那一路。

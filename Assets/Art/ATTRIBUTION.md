@@ -8,12 +8,13 @@
 | 来源 | 许可 | 证据强度 |
 |---|---|---|
 | KayKit(Kay Lousberg)| **CC0 1.0** | 逐包 `LICENSE.txt` 原文,10 个仓库/包全部命中 |
-| Quaternius(Justin, @Quaternius) | **CC0 1.0**(我们手上这批) | 17 个 zip 里 13 个带 CC0 原文;另 4 个见下 |
+| Quaternius(Justin, @Quaternius) | **CC0 1.0**(我们手上这批) | 17 个 zip 里 13 个带 CC0 原文;**Pirate Kit 2026-10-22 从包页补证 CC0**;其余 5 个见下 |
 | Quaternius **Easy Enemy Pack(Jan 2019)** | **CC0 1.0** | 包页 `quaternius.com/packs/easyenemy.html` 原文 `License CC0` + 正文 `free to use in personal and commercial projects`;与本地 zip 的 2019-01 时间戳、5 种敌人完全对上 |
 | acornbringer **Simplistic Low Poly Nature** | **自定义:可免费用,但不得再分发素材本身** | 商品页无 License 字段;作者在页面评论区逐字回复 `free to use them as you please. However, you are not permitted to re-distribute the assets themselves.` |
 | Incompetech(Kevin MacLeod)音乐 6 首 | **CC BY 4.0 ⇒ 必须署名** | 站方许可页原文;游戏内文本在 **`Assets/Resources/Text/Credits.txt`**(唯一一份,致谢页读它) |
 | Noto Sans SC 字体(思源黑体) | **SIL OFL 1.1 ⇒ 必须随字体带许可文本** | 许可证全文已存 `Assets/Art/FONT-OFL-NotoSansSC.txt`,见「字体」一节 |
 | **用户提供:渔网(2026-10-06 下载,2026-10-07 给出来源页)** | **CC BY 4.0 ⇒ 必须署名** | Sketchfab 公开 API 逐字核到 `"CC Attribution"` / `creativecommons.org/licenses/by/4.0/`,作者 **cozee4sure** —— 见「渔网」一节 |
+| **用户提供:直升飞机(2026-10-22 下载)** | **CC BY 4.0 ⇒ 必须署名** | zip 内无许可文件;Sketchfab 公开 API 取回 `"CC Attribution"` / `creativecommons.org/licenses/by/4.0/`,作者 **antonmoek** —— 见「直升飞机」一节 |
 
 ⚠ **三档义务不一样,别混着记:CC0 = 什么都不用做;OFL = 带上许可证文本(不要求界面署名);CC BY = 必须署名。**
 
@@ -72,16 +73,46 @@
 `Assets/Art/quaternius/stylized_nature/Textures/` 下 `PalmTree_Trunk.png`、`PalmTree_Leaves.png`、`Bush_Leaves.png`、`Grass.png`,合计约 1.4MB。
 原因:这批 FBX **不内嵌贴图**,而它的**材质名写的就是贴图名** ⇒ 白模的修法是把 PNG 从包里提出来按名配上(过程与判断依据见开发文档 v0.49 变更记录【⑯】)。原始 449MB 的包照旧只在 `_packs/`,不进 git。
 
-### 包内漏放 License.txt 的(6 个)
+### 运行时副本(v0.79 新增,`Assets/Resources/Models/`)
+
+A/H 结局过场要按 `World.PlaceModel` 的 key 从 `Resources` 取模型,所以从既有包里复制了三份(**同一字节,只换 GUID**):
+
+| 运行时文件 | 来源 | 大小 | 许可 |
+|---|---|---|---|
+| `Resources/Models/cruiseship.fbx` | `Art/quaternius/ships/CruiseShip.fbx`(Ships 包,0930T175219) | 29,468 B | **CC0 1.0**(包内 `LICENSE.txt`) |
+| `Resources/Models/npc_man.fbx` | `Art/quaternius/men/Male_Suit.fbx`(Animated Men 包,1001T012726) | 1,993,452 B | **CC0 1.0** |
+| `Resources/Models/npc_woman.fbx` | `Art/quaternius/women/Female_Dress.fbx`(Animated Women 包,1001T012654) | 1,971,500 B | **CC0 1.0** |
+
+v0.83 又加了一份(**海鸥结局里被拖走的那具人类骸骨**):
+
+| 运行时文件 | 来源 | 大小 | 许可 |
+|---|---|---|---|
+| `Resources/Models/skeleton.fbx` | `Art/quaternius/pirate/Characters_Skeleton.fbx`(Pirate Kit,0930T175411) | 3,826,380 B(6,975 顶点 / 13,766 三角) | **CC0 1.0** —— 包内没有 `License.txt`,但 **2026-10-22 已从包页 `https://quaternius.com/packs/piratekit.html` 逐字核到 `License: CC0. It allows redistribution as it is public domain.`** |
+
+v0.91 又加了两份(**影怪 / 小影怪的身体**,2026-10-23):
+
+| 运行时文件 | 来源 | 大小 | 许可 |
+|---|---|---|---|
+| `Resources/Models/ghost.fbx` | `Art/quaternius/monsters/Ghost.fbx`(Ultimate Monsters,0930T175252) | 1,784,076 B | **CC0 1.0**(包内 `LICENSE.txt`) |
+| `Resources/Models/ghostskull.fbx` | `Art/quaternius/monsters/Ghost_Skull.fbx`(Ultimate Monsters,0930T175252) | 1,786,252 B | **CC0 1.0**(包内 `LICENSE.txt`) |
+
+两份都与源文件 **逐字节一致**(MD5 同值,只换 GUID);用户原话里的 `Ghost_Skull.fbx` 在 Unity 导入后落成小写 `ghostskull.fbx`,代码里的 key 也是后者。
+
+六份都是 **CC0 ⇒ 可商用、可再分发、不要求署名**(原包许可见上;Pirate Kit 的补证见本节表格)。`Art/` 下的源文件保持不动 —— 运行时副本只是"按 key 取"的落地位置,删掉任何一边前先按 GUID 反查引用。
+
+### 包内漏放 License.txt 的(5 个)
 
 | zip 尾号 | 包 | FBX | 推理依据 |
 |---|---|---|---|
 | 0930T173706 | Simple Nature | 13 | 同作者、同 Drive 分发方式,其余 13 包一致 CC0 |
 | 0930T173715 | Animated Guns | 6 | 同上 |
 | 0930T173728 | Animated Zombie | 2 | 同上 |
-| 0930T175411 | Pirate Kit | 71 | 同上 |
 | 1001T012631 | RPG Essentials | 13 | 同上;Drive ID 逐字等于 `quaternius.com/packs/rpg.html` 页面里的那条 |
 | 1001T021032 | Junk Food | 16 | 同上;Drive ID 来自 `quaternius.com/packs/junkfood.html` |
+
+⚠ **Pirate Kit(0930T175411,71 个 FBX)已于 2026-10-22 补证,不再靠"同作者推理"**:包页
+`https://quaternius.com/packs/piratekit.html` 逐字写着 `License: CC0. It allows redistribution as it is public domain.`
+⇒ **CC0 1.0,可再分发、不要求署名**。海鸥结局用的 `Characters_Skeleton.fbx` 就来自这个包(见「运行时副本」)。
 
 ## ✅ 已补证(2026-10-22:用户给出两个商品页 URL,两包都落地)
 
@@ -125,6 +156,19 @@
   **这一件 ≈ 全项目其他 46 件模型加起来的十几倍**,而且它无材质无贴图(= 高模 + 白模,细节观感没换来、重量全吃了)。
   ⇒ **简化 / 换一件 / 就这么留着,是用户的一条待决策**(见开发文档 v0.67【③】与 §11-112)。⚠ 换文件即生效,代码不动;
   删掉 `net.fbx` 则 `World.Net()` 那张几何体拼的网自动回来。
+
+## 直升飞机 —— **许可已确认:CC BY 4.0,须署名**(2026-10-22 用户提供)
+
+- **来源页**:`https://sketchfab.com/3d-models/low-poly-helicopter-5bbed2de9baa4a13a7faa72653b78b64`,UID `5bbed2de9baa4a13a7faa72653b78b64`。
+- **取证方式**:Sketchfab 公开 API 按 UID 取回,逐字为 `name = "Low Poly Helicopter"`、`user.displayName = "antonmoek"`、
+  `license.label = "CC Attribution"`、`license.slug = "by"`、`license.url = http://creativecommons.org/licenses/by/4.0/`、`isDownloadable = true`
+  ⇒ **可商用、可再分发,条件是署名**。
+- **怎么进来的**:用户从 `D:\Edge_Download\low-poly-helicopter.zip` 提供(2026-10-22)。包内 **只有两个文件,没有 License.txt / README**:
+  `source/Helicopter.fbx`(162,624 B,2018-08-14)+ `textures/Palette.png`(30,459 B)。
+- **网格重量**(`python devtools/fbxstats.py`):**顶点 180 / 三角 324**(全项目最轻的一档,远轻于渔网 86,064)。
+- **落地文件**:`Assets/Art/user_provided/helicopter.fbx` + `Assets/Art/user_provided/Palette.png`(存底、贴图按材质名配),
+  `Assets/Resources/Models/helicopter.fbx`(运行时按 key 取,与存底同一字节 md5 `cb4218e1…`)。
+- 署名文本只在 **`Assets/Resources/Text/Credits.txt`** 的「模型 · 直升飞机」一节(致谢页唯一出处)。
 
 ## 音乐 —— **CC BY 4.0,需要署名**(2026-10-01 起,本项目第一批非 CC0 素材)
 

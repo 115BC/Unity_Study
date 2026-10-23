@@ -264,6 +264,27 @@ namespace SixtySLike
         // v0.61:音乐音量(设置页里四档循环:关/低/中/高)。存 0~1 的浮点,`Music` 拿它乘淡入淡出的目标值。
         public static float musicVolume { get { return PlayerPrefs.GetFloat(KeyVolume, 0.7f); } }
         public static void SetMusicVolume(float v) { PlayerPrefs.SetFloat(KeyVolume, Mathf.Clamp01(v)); PlayerPrefs.Save(); }
+
+        // ---- v0.92(用户:"设置页面可以设置画面/音效…全屏模式/窗口模式/窗口模式(无边框),帧率上限,分辨率(以16:9为主);
+        //      主音量(所有声音),BGM音量")----
+        //   画面三项 + 音量两项都走"循环档"不摆滑杆(与 v0.61 音量四档同一口径:滑杆要 fill/handle 那套图形,
+        //   半吊子滑杆比循环按钮更容易做坏)。分辨率只列 16:9(用户原话"以16:9为主")。
+        const string KeyScreenMode = "60slike.screenMode";   // 0=全屏 1=窗口 2=窗口(无边框)
+        const string KeyResIndex = "60slike.resIndex";       // SettingsPage.ResList 的下标
+        const string KeyFpsIndex = "60slike.fpsIndex";       // SettingsPage.FpsList 的下标
+        const string KeyMasterVol = "60slike.masterVolume";  // 主音量(所有声音):AudioListener.volume
+
+        public static int screenMode { get { return PlayerPrefs.GetInt(KeyScreenMode, 0); } }
+        public static void SetScreenMode(int v) { PlayerPrefs.SetInt(KeyScreenMode, Mathf.Clamp(v, 0, 2)); PlayerPrefs.Save(); }
+
+        public static int resIndex { get { return PlayerPrefs.GetInt(KeyResIndex, 2); } }        // 默认 1920×1080
+        public static void SetResIndex(int v) { PlayerPrefs.SetInt(KeyResIndex, Mathf.Clamp(v, 0, 4)); PlayerPrefs.Save(); }
+
+        public static int fpsIndex { get { return PlayerPrefs.GetInt(KeyFpsIndex, 1); } }        // 默认 60
+        public static void SetFpsIndex(int v) { PlayerPrefs.SetInt(KeyFpsIndex, Mathf.Clamp(v, 0, 4)); PlayerPrefs.Save(); }
+
+        public static float masterVolume { get { return PlayerPrefs.GetFloat(KeyMasterVol, 1f); } }
+        public static void SetMasterVolume(float v) { PlayerPrefs.SetFloat(KeyMasterVol, Mathf.Clamp01(v)); PlayerPrefs.Save(); }
     }
 
     public class RunState

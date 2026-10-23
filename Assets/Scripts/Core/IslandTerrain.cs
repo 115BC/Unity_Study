@@ -19,6 +19,9 @@ namespace SixtySLike
         //     才继续成立(最紧的是 尸骨 (3.2, 0.4),高 0.12 米)—— 挪包之前先跑自检看这条。
         static readonly float[] Main = { 9f, -2f, 3.0f, 1.1f };      // x, z, σ, 高
 
+        // v0.78:结局 I 过场的"营地背面的沙丘"要读包心 —— 不在这里再抄一份 (9,-2)。
+        public static Vector2 DuneCenter { get { return new Vector2(Main[0], Main[1]); } }
+
         public static float Height(float x, float z)
         {
             return Bump(x, z, Main);

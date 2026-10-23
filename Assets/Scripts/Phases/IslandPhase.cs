@@ -16,17 +16,27 @@ namespace SixtySLike
 
         bool firstEntry = true;
         int talksToday;
+        // v0.78:结局 I 的过场正在播 —— 这是一个"这一局已经结束,但还没进结局屏"的窗口。
+        //   它必须自己是一个状态:阶段仍是 Island(过场要世界还活着),但日记/Refresh/自由视角都不能再跑。
+        bool gullEnding;
+        // v0.79:A/H 的"船靠岸 → 镜头飞向甲板"也在 Island 阶段里演,理由与 gullEnding 同一条:
+        //   阶段仍是 Island(世界要活着),但这一局已经结束 —— 不能再开面板/走路/写日记。
+        bool shipEnding;
+        // v0.81:搜寻直升机 救走的 A 也要在世界里演完"降落岛心 → 镜头到舱门"再换屏。
+        bool heliEnding;
+        // v0.90:结局 C 的镜头推近骸骨。与上面三条同一套:世界还活着、结算推迟到回调。
+        bool bonesEnding;
         bool fedToday;        // ⚠ v0.64 删掉了 `healedToday`:它只有写、没有读(那条"用药每天一次"的规矩 **从来没有被裁过**,
                               //   所以这里不留"看起来像前置条件"的死状态 —— 想要那条规矩,那是一轮独立的裁定,不是恢复一个旧字段)
         IslandWalk walk;      // v0.53(§11-84):与固定镜头共存的那一路自由视角,`V` 来回
         Shoreline shore;      // v0.58(用户:"**如果能有海浪更好**"):浪线那条会动的泡沫带,**纯演出**
         IslandSky sky;        // v0.75:天空盒(只给第一人称)+ 远处云 + 固定色环境光那一个开关
-        Wildlife wildlife;    // v0.75:绕岛飞的那几只海鸥(纯演出)
 
         public void Start()
         {
             diagDone = false;
             diagAt = Time.unscaledTime + 0.4f;
+            IslandProp.Blocked = false;      // 上一局若在过场里被打断,这个静态开关不能带进新局
             root.ApplyIslandView("IslandPhase.Start");
             // v0.53(§11-84,用户:"共存,使用v切换" + "再实现v键切换视角"):这一层多一路 **自由行走视角**,`V` 来回切。
             //   固定镜头仍是默认模式(v0.14 那条不作废);这个组件只做"镜头归谁 + 走近按 E",
@@ -41,7 +51,9 @@ namespace SixtySLike
                 walk.menuOpen = () => dayPanel;
                 // v0.56(用户:"**夜晚直接切到上帝视角,禁止第一人称**")⇒ 入夜自动退回固定镜头,夜里按 V 也不进自由视角。
                 //   判据从这一层给(这一层才知道现在是不是夜里),`IslandWalk` 不自己猜。
-                walk.forbidFreeLook = () => night;
+                // v0.78:结局 I 过场期间同理 —— 玩家昨天若停在第一人称,天亮这一刻 `wanted` 会把他自动拉回去,
+                //   而过场必须用固定镜头。把它并进同一条判据,而不是另开一个"过场时禁用走路"的开关。
+                walk.forbidFreeLook = () => night || gullEnding || shipEnding || heliEnding || bonesEnding;
             }
             // 跳伞带上岛的储物箱内容一律转入无限容量仓库(§2.3 荒岛仓储)
             if (firstEntry)
@@ -57,6 +69,7 @@ namespace SixtySLike
                                    "跑菜单 Tools/60slike/② 补建 —— 它只补缺的那一层,不覆盖你改过的东西。");
                 }
                 MorningTick(true);
+                if (gullEnding) return;      // v0.78:第一天不会凑齐 4 只,但这条闸保证过场开局时不会继续写日记/Refresh
                 // v0.30:第一页日记 —— 从飞机上活着下来那一刻起,这本日记就开始写。
                 S.Diary(DiaryLines.Opening(S.storage.TotalUnits(), S.mate.present));
             }
@@ -71,7 +84,8 @@ namespace SixtySLike
             //   ⚠ 必须 **在 `Refresh()` 之前** attach:Refresh 第一件事就是 SetNightLook,
             //     而它要读 `sky.DayAmbient`;晚一步就会先拿 `dayAmbientColor` 那份旧值画一帧。
             if (sky == null) sky = IslandSky.Attach(root, gameObject);
-            if (wildlife == null) wildlife = Wildlife.Attach(root, gameObject);
+            // v0.76(用户:"海鸥就是那四只海鸥线的海鸥,不需要一直挂着一只"):天上那支常驻绕岛编队整个删除。
+            //   海鸥只由 `BuildProps` 按 `S.gull.presentCount` 摆在海滩 —— 线没触发就没有海鸥。
             Refresh();
         }
 
@@ -148,9 +162,11 @@ namespace SixtySLike
                 S.Log(S.mate.who.displayName + " 今天状态不错(技能图标亮了:悬浮到他身上,菜单里的\"技能\"那条花 1 精力发动)。");
             }
 
-            if (S.gull.presentCount >= B.gullEndingCount) { root.EndRun(EndingId.I); return; }
-            if (S.day > B.survivalDaysToEndB) { root.EndRun(EndingId.B); return; }
-            if (S.stats.hp <= 0) { root.EndRun(EndingResolver.DeathEnding(S)); return; }
+            // v0.78:结局 I 不再"当场换屏" —— 世界还活着的时候先把 §4.7 那一镜播完,再 EndRun。
+            if (S.gull.presentCount >= B.gullEndingCount) { BeginGullEnding(); return; }
+            // v0.90(用户:"五十天使用轮船获救结局"):B 不再"当场换屏",先让邮轮过场演完再结算。
+            if (S.day > B.survivalDaysToEndB) { BeginShipEnding(EndingId.B); return; }
+            if (S.stats.hp <= 0) { BeginDeathEnding(); return; }
         }
 
         // v0.52(用户:"队友处于饥荒的当天不会死亡,第二天才会死亡")
@@ -170,7 +186,9 @@ namespace SixtySLike
             var m = S.mate;
             m.moodDaysSinceTalk++;
             if (m.moodDaysSinceTalk >= B.teammateMoodForcedDropDays) DropMood();
-            else if (S.rng.NextDouble() < B.teammateMoodDailyDropChance) DropMood();
+            // v0.86:昨天/昨夜聊过 ⇒ 这个清晨不掷随机掉层(否则刚回升的精神会被同一晨的骰子吃掉)。
+            //   强制掉层(3 天没聊)不受影响 —— 谈话会把 `moodDaysSinceTalk` 归零,本来也碰不到那一档。
+            else if (!talkedSinceDawn && S.rng.NextDouble() < B.teammateMoodDailyDropChance) DropMood();
 
             m.hungerDaysSinceMeal++;
             if (m.hungerDaysSinceMeal >= B.teammateMoodForcedDropDays) DropHunger();
@@ -220,7 +238,7 @@ namespace SixtySLike
             S.mate.Reset();
             S.Log("队友永久消失(" + why + "),不补刷。看家事故骰从此每个探索日都掷。");
             // v0.30:日记不在这里落笔 —— 白天那两条(饥荒/自杀)各自在 TickTeammate 里写,
-            //        夜里那两条(小影怪/引开影怪)由 NightResolver 的那条夜用日记写。
+            //        夜里那一条(小影怪)由 NightResolver 的那条夜用日记写。
             LoreRoll("matelost");      // v0.26 C3:两个被划掉的名字 —— 每个"永久失去"的清晨各掷一次 1%
         }
 
@@ -242,7 +260,7 @@ namespace SixtySLike
         {
             S.stats.hp = Mathf.Max(0, S.stats.hp - n);
             S.Log("-" + n + " 生命(" + why + "),剩 " + S.stats.hp + "/" + B.hpMax);
-            if (S.stats.hp <= 0) root.EndRun(EndingResolver.DeathEnding(S));
+            if (S.stats.hp <= 0) BeginDeathEnding();
         }
 
         // ---------------- 表现层:沙滩上看得见的一层 + 四个按钮 ----------------
@@ -510,6 +528,8 @@ namespace SixtySLike
 
         void OnDestroy()
         {
+            // v0.78:过场结束时本阶段会被 EndRun 拆掉;这个静态开关不交还,下一局的沙滩会点不动。
+            IslandProp.Blocked = false;
             // 道具是 Island 那层的子物体,不是本阶段的:阶段被销毁时不自己收,它们会留在结局画面上
             for (int i = 0; i < props.Count; i++) if (props[i] != null) Destroy(props[i]);
             props.Clear();
@@ -563,10 +583,57 @@ namespace SixtySLike
             return k != null && SmallOnBeach.TryGetValue(k.key, out f) ? ItemVisual * f : ItemVisual;
         }
 
+        // v0.91(用户:"影怪用ghost.fbx,小影怪用Ghost_Skull.fbx"):夜里场上那一只。
+        //   ⚠ 只负责"看得见"这一层:点它没有任何选项(影怪/小影怪 的选项都绑在物品/篝火/队友上),
+        //     跳杀与驱散由 `ShadowScareCutscene` 另外造一只 —— 不移动它,免得和 BuildProps 重建打架。
+        GameObject ShadowBody(Transform parent)
+        {
+            var st = root.islandStage;
+            if (st == null) return null;
+            bool small = NightResolver.Current == DB.SmallShadow;
+            string key = small ? "ghostskull" : "ghost";
+            float height = small ? 1.5f : 2.6f;
+            Vector3 pos;
+            if (small)
+            {
+                // 小影怪绕着吊床转:队友睡在 打火石 那一格靠镜头一侧
+                var fp = st.Slot(StableSlot(DB.Flint)).position;
+                pos = new Vector3(fp.x + 2.6f, 0f, fp.z + 2.6f);
+            }
+            else
+            {
+                var fa = st.fireAnchor != null ? st.fireAnchor.position : st.transform.position;
+                pos = new Vector3(fa.x + 4.6f, 0f, fa.z - 2.4f);
+            }
+            pos.y = IslandTerrain.GroundY(pos.x, pos.z);
+            var go = World.PlaceModel(parent, key, false, pos, Vector3.one * height);
+            if (go == null)
+            {
+                // 模型没导进来:一团深色影子,跳杀那一镜也还有东西可扑。
+                go = World.Primitive(PrimitiveType.Capsule, key, pos + Vector3.up * height * 0.5f,
+                                     new Vector3(height * 0.36f, height * 0.5f, height * 0.36f),
+                                     new Color(0.04f, 0.05f, 0.09f), parent, null, false);
+            }
+            foreach (var col in go.GetComponentsInChildren<Collider>(true)) Destroy(col);
+            // 朝向镜头(水平),不然玩家看到的是背影
+            var cam = root.cam;
+            if (cam != null)
+            {
+                var dir = cam.transform.position - go.transform.position;
+                dir.y = 0f;
+                if (dir.sqrMagnitude > 0.0001f)
+                    go.transform.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+            }
+            World.PointLight(go, new Vector3(0f, height * 0.55f, 0f),
+                             new Color(0.52f, 0.58f, 0.95f), 1.4f, 5f, false);
+            return go;
+        }
+
         void BuildProps()
         {
             for (int i = 0; i < props.Count; i++) if (props[i] != null) Destroy(props[i]);
             props.Clear();
+            shadowBody = null;      // 它也在 props 里,旧引用随这一轮重建作废
             // v0.53(§11-84):道具层每轮重建 ⇒ 通知自由视角"你缓存的那些 IslandProp 全作废了"。
             //   不通知的后果不是崩,是 **按 E 打在一堆已销毁的物体上**(Unity 的 Destroy 是延迟的,引用还活着)。
             if (walk != null) walk.MarkStale();
@@ -621,9 +688,22 @@ namespace SixtySLike
                 //   0 格没有灯、1 格一小团、2 格更远更亮。
                 //   ⚠ 这 **不是一个新行动**,不改任何数值,只是把已有的 `flashlightCharge` 露在屏幕上;
                 //     "拿在手上往前照"是聚光,它属于第一人称那一轮(§11-84),到时这盏灯搬到镜头上。
-                if (k == DB.Flashlight && S.flashlightCharge > 0)
+                // v0.85(用户:"手电筒异常发光?检查一下"):这盏灯以前只问"有没有电",**白天也亮**。
+                //   v0.83 把点光锚点从"被模型倍率放大的局部坐标"改回世界米之后,灯从几十米高空落回物品身上,
+                //   于是白天沙滩上多出一团蓝白光 —— 用户看到的就是它。现在只在夜里亮(电量这件事在夜晚才有意义);
+                //   电量、充电、夜晚结算一个数都没动。
+                if (night && k == DB.Flashlight && S.flashlightCharge > 0)
                     World.PointLight(go, Vector3.up * (ItemVisual * 0.45f), new Color(0.72f, 0.85f, 1f),
                                      0.9f * S.flashlightCharge, 2.5f + 2f * S.flashlightCharge, false);
+                // v0.84(用户:"上帝视角下的钓鱼竿调大一点,第一人称的钓鱼竿大小保持现状"):
+                //   切 V 不重建道具 ⇒ 尺寸由这个小组件每帧跟 `IslandWalk.Active` 对齐;
+                //   必须在 `PropAt`(也就是 `PlaceModel`)之后 `Capture`,拿到的才是最终缩放与脚底高度。
+                if (k == DB.FishingRod)
+                {
+                    var rs = go.GetComponent<RodViewScale>();
+                    if (rs == null) rs = go.AddComponent<RodViewScale>();
+                    rs.Capture();
+                }
                 props.Add(go);
             }
 
@@ -638,12 +718,27 @@ namespace SixtySLike
                 //     判定、选项、数值一个字都没动:它纯粹是那晚的背景演出,不可点、不参与任何结算。
                 // v0.75(用户 v0.71 ⑧「飞机夜夜飞」):从"只有搜寻飞机那一晚"改成 **每一晚都在** ——
                 //     它仍纯演出:不占落点、不可点、不参与结算。
-                props.Add(DistantPlane(st.transform));
+                // ⚠ v0.76 你改口:"只有一架搜寻飞机且只在触发的时候才有动画" ⇒ **收回夜夜飞**,
+                //     只在 `searchplane` 那一晚摆这一架(判据收在 `DistantHelicopterTonight`,自检钉它)。
+                // v0.81(用户:"都换"):获救线分轮船 / 直升机两条 —— 那一晚飞的是 **真直升机模型**,
+                //   不再用三块方块代替;仍然只有 searchplane 那一晚、仍然不可点。
+                if (DistantHelicopterTonight(NightResolver.Current, DB.SearchPlane))
+                    props.Add(DistantHelicopter(st.transform));
                 // v0.75(用户 v0.71 ⑧「下雨」):雨夜里真的有雨。判据是事件 key(rain / rain_light / rain_heavy / rain_storm),
                 //   **不是**掷档——档位只决定雨多大这件事本来就在夜里那句话里,这里只画"下雨了"。
                 if (NightResolver.Current != null &&
                     NightResolver.Current.key.StartsWith("rain", StringComparison.Ordinal))
                     props.Add(IslandSky.RainFx(st.transform, root.cam != null ? root.cam.transform : null));
+                // v0.84(用户:"武器a的文案要换,改成诡异的月光吧,并且当夜有一轮圆月,亮的发白,刺眼"):
+                //   纯演出 —— 不可点、不参与判定。只在 `weapona` 那一晚摆。
+                if (NightResolver.Current == DB.WeaponA) props.Add(MoonFx(st.transform));
+                // v0.91(用户:"影怪用ghost.fbx,小影怪用Ghost_Skull.fbx"):这两晚营地外真的站着它。
+                //   纯演出 + 跳杀/驱散的载体:不可点、不参与结算。位置在火光外,看清轮廓但不挡物品。
+                if (NightResolver.Current == DB.Shadow || NightResolver.Current == DB.SmallShadow)
+                {
+                    shadowBody = ShadowBody(st.transform);
+                    if (shadowBody != null) props.Add(shadowBody);
+                }
             }
             // 大海:v0.28 起 喝海水 已随喝水系统删除 ⇒ 白天点它什么都不发生,它只在夜晚当"徒手抓鱼/下水"的落点
             if (st.seaAnchor != null)
@@ -673,6 +768,12 @@ namespace SixtySLike
                                     //        模型若也按 0.9 归一,人就会被压成半人高(菜单⑤ 量出来的)。
                                     "mate_" + S.mate.who.key, false, new Vector3(1.2f, 1.8f, 1.2f));
                 props.Add(mateGo);
+                // v0.90(用户:"队友能有一些自己的动作吗?…弯腰/挠头/走两步"):
+                //   白天给他挂 `MateFidget`,按骨头名字程序化摆姿势(换重心 / 挠头 / 弯腰 / 走两步),
+                //   不新增 clip、不需要跑菜单①;模型里找不到骨头(退回胶囊)时它自己关掉。
+                //   夜里他已经躺下,不加 —— 否则呼吸/换重心会把躺姿顶起来。
+                if (!night && mateGo.GetComponent<MateFidget>() == null)
+                    mateGo.AddComponent<MateFidget>();
                 // v0.50(用户:"6.队友在夜晚呈现躺下的状态(能给他裹个被子什么的吗)" —— 追问后你选的读法是 **"一律盖一条"**)
                 //   ⇒ 夜里他躺下,并且 **不管仓库里有没有毯子都盖一条**。这条要说清楚:那是画面比仓库多说了一条毯子,
                 //     是你要的效果,不是 bug;它不改任何数值(毯子照常只在"低温夜裹毯子"那条选项里被使用/打坏)。
@@ -703,15 +804,29 @@ namespace SixtySLike
                                  () => NightClickTarget("monkey"),
                                  new Vector3(0.9f, 1.1f, 0.9f), 0.55f, null, null, "fox"));
 
-            for (int i = 0; i < S.gull.presentCount; i++)
+            // v0.76(用户:"海鸥就是那四只海鸥线的海鸥,不需要一直挂着一只"):**这是全工程唯一一处摆海鸥** ——
+            //   数量 = `S.gull.presentCount`(0~4),线没触发就没有海鸥;天上那支常驻编队已删除。
+            // v0.77(用户:"触发海鸥线后,白天海鸥绕岛飞,夜晚海鸥停留在陆地上")⇒ 同一批海鸥分两支演出:
+            //   白天 = 绕岛飞(不可点、无 collider,红线 60);夜里 = 落回营地边(可点 = 点一下全部飞走)。
+            //   ⚠ 白天那几只飞着 ⇒ 「点一下全部飞走」这个交互 **只剩夜里有入口**;这是这条演出要求的直接后果,
+            //     没有为了保住它给天上的海鸥加 collider(那会与"天上的东西不抢落点"打架,要改得用户单独裁)。
+            if (S.gull.presentCount > 0 && night)
             {
-                var p = st.gullAnchor.position + new Vector3(i * 1.15f - 1.7f, 0f, i % 2 * 0.9f);
-                var gull = PropAt(p, i == 0 ? "海鸥" : "", PrimitiveType.Sphere, new Color(0.94f, 0.95f, 0.97f),
-                                 ScatterGulls, new Vector3(0.85f, 0.6f, 0.85f), 0f, null, null, "gull");
-                // v0.75(用户 v0.71 ⑪「海鸥扇翅膀」):地上这几只也扇 —— 与天上那四只同一个组件,
-                //   有 Animator 资产时走它、没有就走程序化兜底。
-                if (gull.GetComponent<GullFlap>() == null) gull.AddComponent<GullFlap>();
-                props.Add(gull);
+                for (int i = 0; i < S.gull.presentCount; i++)
+                {
+                    var p = GullPerchPos(st.gullAnchor.position, i);
+                    var gull = PropAt(p, i == 0 ? "海鸥" : "", PrimitiveType.Sphere, new Color(0.94f, 0.95f, 0.97f),
+                                     ScatterGulls, new Vector3(0.85f, 0.6f, 0.85f), 0f, null, null, "gull");
+                    // v0.75(用户 v0.71 ⑪「海鸥扇翅膀」):有 Animator 资产时走它、没有就走程序化兜底。
+                    // v0.76:姿势修正(+90°X)由 `World.Placement["gull"]` 统一给,这几只已经不直立了。
+                    if (gull.GetComponent<GullFlap>() == null) gull.AddComponent<GullFlap>();
+                    props.Add(gull);
+                }
+            }
+            else if (S.gull.presentCount > 0)
+            {
+                for (int i = 0; i < S.gull.presentCount; i++)
+                    props.Add(FlyingGull(st.transform, i));
             }
             // v0.47:两把火各有各的火苗 —— 篝火 在 fireAnchor 那格,信号火堆 在自己那一格。
             //        原来那一条 "if (S.fireLitTonight)" 的火苗现在只算 篝火 的(否则 信号火堆 烧着时
@@ -833,27 +948,134 @@ namespace SixtySLike
         //     躺下是一片横条),所以这里转完重新贴一次地面,不然一半身子埋进沙里
         //     (与"全都陷进沙里"那次同一个道理:凡是先摆后转,转完必须重新对一次底面)。
         //   ⚠ 只能 **右乘**(`rotation *= Euler`),不能赋值 —— 红线 72 那条 FBX 朝向修正还在身上。
-        // v0.50(用户:"5.搜寻飞机能加入远方的动画吗"):那一晚天际线上横穿过去的 **一架几何体剪影**。
-        //   ⚠ 按 §11-82 的定案,飞机 **保持几何体剪影**(主源没有客机模型,也不为此引入新包)⇒ 三块压扁的方块:
-        //     机身 + 两翼 + 尾翼。它 **不可点**(没有 collider、没有名字、没有 onClick)⇒ 不会抢任何落点,
-        //     也不会违反红线 60("往已有夜晚落点上摆东西之前先问这一下归谁" —— 它在 12 米外的高空,不在任何锚点上)。
+        // v0.50(用户:"5.搜寻飞机能加入远方的动画吗"):那一晚天际线上横穿过去的机影。
+        //   它 **不可点**(没有 collider、没有名字、没有 onClick)⇒ 不会抢任何落点,
+        //   也不会违反红线 60("往已有夜晚落点上摆东西之前先问这一下归谁" —— 它在 12 米外的高空,不在任何锚点上)。
         //   移动本身在 `DistantFlyby`(与 `GlowLight` 同一类:自己管自己,阶段不每帧过问)。
-        GameObject DistantPlane(Transform parent)
+        // v0.76(用户:"只有一架搜寻飞机且只在触发的时候才有动画"):演出跟着事件走 ——
+        //   `searchplane` 那一晚才摆它;其余夜里连"一架远处的机影"都没有。纯演出,不进任何判定。
+        //   ⚠ 纯函数 + 由调用方把 `DB.SearchPlane` 传进来:`DB` 是实例字段,静态自检拿不到 root.db。
+        // v0.81(用户:"都换"):获救线分轮船 / 直升机 ⇒ 这一架换成 `helicopter` 模型,不再用三块方块。
+        //   模型的机头在 Unity 里朝 **+X**(FBX 世界机头 −X;Unity 的 Y-up / 左手导入把这个 X 翻正,
+        //   人形 FBX 的 +Z 朝向在 Unity 里仍是 +Z,可作这条转换的旁证)⇒ 航线正好从 −X 飞向 +X,不用补 yaw。
+        //   ⚠ 模型来自用户(CC BY 4.0,署名在 `Credits.txt`);它 **无 collider** —— 夜里仍然点不到。
+        public static bool DistantHelicopterTonight(GameEventSO nightEvent, GameEventSO searchPlaneEvent)
         {
-            var body = new GameObject("DistantPlane");
+            return nightEvent == searchPlaneEvent;
+        }
+
+        // v0.82(用户:"搜寻飞机的红光偏移了"):红灯不再写死 `(-1.05, 0.55)`。
+        // v0.83(用户:"直升机的红点还是歪的"):v0.82 仍然用 **整机** AABB 推 —— 整机 min.x 是 **主旋翼翼尖**
+        //   (FBX `Propeller_2` x[-1825.9, 2345.5]),不是尾梁。现在只量 **尾梁那几个节点**:
+        //   `Tail_part` 自己的 AABB 是 x[2673.9, 2969.0] / y[482.0, 539.0](FBX 坐标,Unity 里 X 镜像)。
+        //   灯贴在尾梁最后端(内缩 6%)、高度取 **这段自己的中线** —— 那里正好是尾桨轴的高度。
+        public static Vector3 DistantNavLight(Vector3 mn, Vector3 mx)
+        {
+            var size = mx - mn;
+            return new Vector3(mn.x + size.x * 0.06f, (mn.y + mx.y) * 0.5f, (mn.z + mx.z) * 0.5f);
+        }
+
+        // 尾梁的独立包围盒:只合并名字里带 `Tail` 的渲染器(真模型 `Tail_part`,灰盒兜底 `Tail`)。
+        //   ⚠ 这正是"红点歪"的根因 —— 拿整机盒子推尾端,推出来的其实是旋翼尖。
+        public static bool TailBounds(GameObject model, out Vector3 min, out Vector3 max)
+        {
+            min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            int found = 0;
+            foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r == null || r.name.IndexOf("Tail", System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                Vector3 a, b;
+                if (!World.MeshBounds(r, out a, out b)) continue;
+                min = Vector3.Min(min, a);
+                max = Vector3.Max(max, b);
+                found++;
+            }
+            return found > 0;
+        }
+
+        GameObject DistantHelicopter(Transform parent)
+        {
+            var body = new GameObject("DistantHelicopter");
             body.transform.SetParent(parent, false);
             var fly = body.AddComponent<DistantFlyby>();
-            fly.height = 6f; fly.seconds = 14f;
+            // v0.76:高度 6 → 7。固定镜头(65°/俯角 26°)下 6 米在 25 米外只比地平线高 0.9°,
+            //   剪影几乎压在浪线上;7 米 ≈ 3°,落在天空那一条里,再配下面的航行灯就看得清了。
+            fly.height = 7f; fly.seconds = 14f;
             // 起手就摆在航线上:`Update` 要到下一帧才跑,不写这一行的话它有一帧停在岛的原点(看着像"飞机从营地飞出来")
             body.transform.localPosition = new Vector3(fly.fromX, fly.height, fly.depth);
-            var dark = World.Mat(new Color(0.10f, 0.11f, 0.14f));
-            Cube(body.transform, "Fuselage", new Vector3(0f, 0f, 0f), new Vector3(1.5f, 0.16f, 0.18f), dark);
-            Cube(body.transform, "Wing", new Vector3(-0.1f, 0f, 0f), new Vector3(0.34f, 0.06f, 1.9f), dark);
-            Cube(body.transform, "Tail", new Vector3(0.62f, 0.1f, 0f), new Vector3(0.2f, 0.24f, 0.06f), dark);
+
+            // 最长边(机身长度)收进 2.4 米:比原来 1.5 米的方块机身大一档,远看仍是一枚小剪影。
+            var model = World.PlaceModel(body.transform, "helicopter", false, body.transform.position,
+                                         Vector3.one * 2.4f);
+            if (model != null)
+            {
+                model.transform.rotation = body.transform.rotation;     // 机头 +X 与航线同向
+                foreach (var col in model.GetComponentsInChildren<Collider>(true))
+                {
+                    col.enabled = false;          // 销毁是延迟的,先关掉保证这一帧也点不到
+                    UnityEngine.Object.Destroy(col);
+                }
+            }
+            else
+            {
+                // 模型没导进来也不能空场:退回 v0.50 的三块方块剪影。
+                var dark = World.Mat(new Color(0.10f, 0.11f, 0.14f));
+                Cube(body.transform, "Fuselage", new Vector3(0f, 0f, 0f), new Vector3(1.5f, 0.16f, 0.18f), dark);
+                Cube(body.transform, "Wing", new Vector3(-0.1f, 0f, 0f), new Vector3(0.34f, 0.06f, 1.9f), dark);
+                Cube(body.transform, "Tail", new Vector3(-0.62f, 0.1f, 0f), new Vector3(0.2f, 0.24f, 0.06f), dark);
+            }
+
+            // v0.76(用户:"搜寻飞机的动画只有触发的夜里才有"):0.10 的剪影贴着地平线不好认,
+            //   加一盏 **不受光** 的红色航行灯(一闪一闪)把"它在飞"说清楚 —— 纯演出,不改判定。
+            //   灯挂在机尾(−X 侧):位置由实测包围盒推(见 `DistantNavLight`),灰盒兜底才用固定值。
+            var lampLocal = new Vector3(-0.65f, 0.18f, 0f);   // 灰盒尾块 x[−0.72,−0.52] 之内
+            if (model != null)
+            {
+                // v0.83:量 **尾梁自己** 的盒子(`Tail_part`),不是整机 —— 后者的尾端是主旋翼翼尖。
+                Vector3 mn, mx;
+                if (TailBounds(model, out mn, out mx))
+                    lampLocal = body.transform.InverseTransformPoint(DistantNavLight(mn, mx));
+                // v0.83(用户:"螺旋桨能旋转吗"):远景这一架也转。
+                if (model.GetComponent<RotorSpin>() == null) model.AddComponent<RotorSpin>();
+            }
+            var lamp = Cube(body.transform, "NavLight", lampLocal,
+                            new Vector3(0.12f, 0.12f, 0.12f), World.UnlitMat(new Color(1f, 0.26f, 0.16f)));
+            lamp.AddComponent<Blink>();
             return body;
         }
 
-        static void Cube(Transform parent, string name, Vector3 local, Vector3 scale, Material m)
+        // v0.84(用户:"当夜有一轮圆月,亮的发白,刺眼"):
+        //   `weapona` 那一晚的纯演出 —— 固定镜头朝 −z 看,把它放在 **天空板之前、云的左侧空档**
+        //   (`x = −85`,避开 `IslandSky.BuildClouds` 那三团在 −z 方向上的云),高度只比镜头高 6 米左右,
+        //   在 65° 竖直视野里刚好落在画面上缘下面;月盘用不受光的纯白,外面两圈透明径向渐变当眩光。
+        //   ⚠ 不点、不判定、不改环境光;`BuildProps` 每轮整批销毁时跟着走。
+        GameObject MoonFx(Transform parent)
+        {
+            var moon = new GameObject("Moon");
+            moon.transform.SetParent(parent, false);
+            var pos = new Vector3(IslandTerrain.Center.x - 85f, 12f, -190f);
+            moon.transform.position = pos;
+
+            var white = World.UnlitMat(Color.white);
+            World.Primitive(PrimitiveType.Sphere, "moon-disc", pos, Vector3.one * 7.5f, white,
+                            moon.transform, null, false);
+
+            var glow = World.GlowMat();
+            if (glow != null && root.cam != null)
+            {
+                // Quad 的 +Z 要朝向镜头;放在月盘前 4 米,免得被球体的深度挡掉中心那一点。
+                var rot = Quaternion.LookRotation((root.cam.transform.position - pos).normalized, Vector3.up);
+                var glowPos = new Vector3(pos.x, pos.y, pos.z + 4f);
+                World.Primitive(PrimitiveType.Quad, "moon-glow-inner", glowPos, Vector3.one * 24f, glow,
+                                moon.transform, null, false, rot.eulerAngles);
+                World.Primitive(PrimitiveType.Quad, "moon-glow-outer", glowPos, Vector3.one * 48f, glow,
+                                moon.transform, null, false, rot.eulerAngles);
+            }
+            return moon;
+        }
+
+        static GameObject Cube(Transform parent, string name, Vector3 local, Vector3 scale, Material m)
         {
             var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
             g.name = name;
@@ -862,6 +1084,60 @@ namespace SixtySLike
             g.transform.localScale = scale;
             g.GetComponent<Renderer>().sharedMaterial = m;
             UnityEngine.Object.Destroy(g.GetComponent<Collider>());      // 运行时这一侧用 Destroy(不是 Immediate)
+            return g;
+        }
+
+        // v0.77:白天绕岛的海鸥。holder 只负责"位置 + 朝向"(`GullCircle` 每帧赋 rotation),
+        //   模型是它的子物体 ⇒ `World.Placement["gull"]` 的 +90°X 不会被盖掉(盖掉就又直立了)。
+        //   **无 collider**:飞行中的海鸥不是可点物,不抢任何落点(红线 60)。
+        GameObject FlyingGull(Transform parent, int i)
+        {
+            float radius, height, speed, phase;
+            GullFlightRoute(i, out radius, out height, out speed, out phase);
+            var holder = new GameObject("FlyingGull" + i);
+            holder.transform.SetParent(parent, false);
+            holder.transform.position = new Vector3(IslandTerrain.Center.x + Mathf.Cos(phase) * radius,
+                                                    height,
+                                                    IslandTerrain.Center.y + Mathf.Sin(phase) * radius);
+            var c = holder.AddComponent<GullCircle>();
+            c.center = new Vector3(IslandTerrain.Center.x, 0f, IslandTerrain.Center.y);
+            c.radius = radius; c.height = height; c.speed = speed; c.phase = phase;
+
+            var body = World.PlaceModel(holder.transform, "gull", false, holder.transform.position,
+                                        Vector3.one * 1.8f);
+            if (body == null)
+                body = World.Primitive(PrimitiveType.Sphere, "gull", holder.transform.position,
+                                       new Vector3(1.3f, 0.35f, 0.6f), new Color(0.94f, 0.95f, 0.97f),
+                                       holder.transform, null, false);
+            else
+                foreach (var col in body.GetComponentsInChildren<Collider>(true))
+                {
+                    col.enabled = false;          // 销毁是延迟的,先关掉保证这一帧也点不到
+                    UnityEngine.Object.Destroy(col);
+                }
+            if (body.GetComponent<GullFlap>() == null) body.AddComponent<GullFlap>();
+            return holder;
+        }
+
+        // 白天的绕岛航线。**半径全部在浪线之外**(自检 `V076()` ③ 钉住):海鸥绕的是整座岛,
+        //   不横穿营地;也正因为不在岛面上,飞行中不给 collider 也不会压住任何可点落点。
+        // 高度 2.6~4.4 米:固定镜头(65° / 俯角 26°)下落在海平线下方那一条海里(屏幕约 13%~19%),
+        //   不会跑到只有 6.5° 的天空带外面去(那是 v0.75 那支编队看不见的原因)。
+        public static void GullFlightRoute(int i, out float radius, out float height, out float speed, out float phase)
+        {
+            radius = 30f + i * 4f;                      // 30 / 34 / 38 / 42 米
+            height = 2.6f + (i % 3) * 0.9f;              // 2.6 / 3.5 / 4.4 米
+            speed = 0.08f + i * 0.008f;                  // 弧度/秒 ≈ 18~24 秒走完半圈
+            phase = i * Mathf.PI * 0.5f;                 // 四只错开,不排成一条线
+        }
+
+        // 夜里落回营地边:水平位置仍从 `gullAnchor` 推(以后挪锚点它们跟着走),
+        //   但 **脚踩在地面上**(`GroundY`,含山包)—— 用户要的是"停留在陆地上",不是浮在旧锚点那 2.6 米空中。
+        public static Vector3 GullPerchPos(Vector3 anchor, int i)
+        {
+            float x = anchor.x + i * 1.15f - 1.7f;
+            float z = anchor.z + (i % 2) * 0.9f;
+            return new Vector3(x, IslandTerrain.GroundY(x, z), z);
         }
 
         void LayDown(GameObject go)
@@ -1151,9 +1427,19 @@ namespace SixtySLike
 
         // 医疗箱必定成功;只有自制药品掷 70%(§2.3,两条结算不许合并)
         // v0.39:用药不再花精力(同上那条口径 —— 治生病不该再收一次体力税)
+        // v0.86(用户:"使用医疗包除了去除异常状态还要恢复所有生命值"):
+        //   医疗箱从"治病 **或** 回 1 点"改成 **两件事一起做** —— 清掉 生病 + 生命回满。
+        //   自制药品仍是"二选一 + 掷 70%"(它没有跟着改);两条结算继续分开写,不合并。
         void UseMedKit()
         {
-            S.storage.Remove(DB.MedKit, 1); ApplyMedicine(1f, "医疗箱");
+            S.storage.Remove(DB.MedKit, 1);
+            bool wasSick = S.stats.sick;
+            int before = S.stats.hp;
+            S.stats.sick = false;
+            S.stats.hp = B.hpMax;
+            S.Log("医疗箱:" + (wasSick ? "病好了," : "")
+                  + (before >= B.hpMax ? "生命本来就是满的。" : "生命回满(" + before + " → " + B.hpMax + ")。"));
+            D("heal");
         }
 
         void UseMedicine()
@@ -1182,6 +1468,28 @@ namespace SixtySLike
         //   面板现在是画布正中的 modal,不再跟着世界点投影,所以 PlaceBesideObject / UiScale 一起删了。
         //   点队友 = 开面板;夜晚点队友 仍走事件选项(NightClickTarget("mate")),不受这里影响。
 
+        // —— v0.92:队友面板头像(Resources/Icons/mate_<key>,人物肖像;与携带条背人格同一份贴图) ——
+        //   Sprite/Texture 都按 key 建一次缓存(与 ScavengingPhase.IconFor 同一口径:每帧 Sprite.Create 会漏 Texture 且垃圾一堆,
+        //   面板虽然不是每帧开,但缓存更省)。查不到也要记下来,否则每次打开面板都重新走一遍 Resources 查找。
+        static readonly Dictionary<string, Texture2D> avatarTex = new Dictionary<string, Texture2D>();
+        static readonly Dictionary<string, Sprite> avatarSpr = new Dictionary<string, Sprite>();
+
+        static Texture2D AvatarTexture(string key)
+        {
+            if (avatarTex.TryGetValue(key, out var t)) return t;
+            t = Resources.Load<Texture2D>("Icons/mate_" + key);
+            avatarTex[key] = t;
+            return t;
+        }
+
+        static Sprite AvatarSprite(string key, Texture2D t)
+        {
+            if (avatarSpr.TryGetValue(key, out var s)) return s;
+            s = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f));
+            avatarSpr[key] = s;
+            return s;
+        }
+
         void OpenMatePanel()
         {
             if (!S.mate.present) return;
@@ -1193,8 +1501,19 @@ namespace SixtySLike
                                new Vector2(-260, -300), new Vector2(260, 300));
 
             // —— 左上:头像 + 名字 ——
-            Ui.Panel(box, "avatar", S.mate.who.color, new Vector2(0, 1), new Vector2(0, 1),
-                     new Vector2(18, -100), new Vector2(114, -4));
+            // v0.92(用户:"我想替换的其实是队友面板里的头像"):头像用 `Icons/mate_<key>` 的人物肖像,
+            //   底下垫一圈原队友色当相框;没贴图时就是原来的纯色块(不报错、不空格)。
+            var avatarBg = Ui.Panel(box, "avatar", S.mate.who.color, new Vector2(0, 1), new Vector2(0, 1),
+                                    new Vector2(18, -100), new Vector2(114, -4));
+            var avTex = AvatarTexture(S.mate.who.key);
+            if (avTex != null)
+            {
+                // ⚠ v0.92 补:居中锚(0.5,0.5)下 offset 必须是 **(-45,-45)→(45,45)** 这样的正尺寸;
+                //   写成 (3,3)→(-3,-3) 是负尺寸矩形(项目里反复栽过的那类),Image 不渲染、只在日志里留一条警告。
+                Ui.Icon(avatarBg, "avatarImg", AvatarSprite(S.mate.who.key, avTex), Color.white,
+                        new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                        new Vector2(-45, -45), new Vector2(45, 45));
+            }
             Ui.Label(box, "name", S.mate.who.displayName, 22, TextAnchor.UpperLeft, Color.white,
                      new Vector2(0, 1), new Vector2(1, 1), new Vector2(128, -48), new Vector2(-18, -14));
             Ui.Label(box, "prof", S.mate.who.profession + (S.mate.sick ? "  ·  生病" : ""), 15,
@@ -1278,7 +1597,7 @@ namespace SixtySLike
                      new Vector2(0, 1), new Vector2(1, 1), new Vector2(212, y - 24), new Vector2(-18, y));
         }
 
-        // 第五种失去队友的路径(前四种:自杀 / 饥荒 / 小影怪那晚 / 影怪那夜引开)。
+        // 第四种失去队友的路径(前三种:自杀 / 饥荒 / 小影怪那晚)。v0.91 删掉"引开影怪"后序号前移。
         // 出现条件写死:**仓库没有罐头 且 玩家饱食度已经归零** —— 它是"要么吃人要么饿着"的那一格。
         // v0.46(用户):吃掉队友的回饱是"一次回满"(与 椰子 同类),代价改挂在天数上 —— **三天吃不下东西**。
         //   常量写在代码里、没进 BalanceConfig:§7.2 那条"资产缺这个键 → 数值静默读成 0",
@@ -1472,7 +1791,8 @@ namespace SixtySLike
         }
 
         // 白天行动全部由"点那件东西"直接分派(见 UseItem),这里不再有统一的 DoActivity 入口。
-        void CheckDeath() { if (S.stats.hp <= 0) root.EndRun(EndingResolver.DeathEnding(S)); }
+        // v0.90:死亡结局 C 先在世界里推近骸骨;F(回环)仍当场换屏。
+        void CheckDeath() { if (S.stats.hp <= 0) BeginDeathEnding(); }
 
         public void Heal(int n, string why)
         {
@@ -1617,6 +1937,7 @@ namespace SixtySLike
             }
             else S.Log("陪 " + S.mate.who.displayName + " 聊了一会儿(精神已经是良好)。");
             S.mate.moodDaysSinceTalk = 0;
+            talkedSinceDawn = true;
             Refresh();
         }
 
@@ -1998,6 +2319,7 @@ namespace SixtySLike
 
         // 喝 / 吃 / 用药 的弹层已删(v0.15:点那件东西本身就用掉它)。见 EatCan / EatChocolate /
         // DrinkFresh / DrinkDirty / UseMedKit / UseMedicine。
+        // v0.86:医疗箱已改成独立结算(治病 + 回满),这里只剩 自制药品 这条"掷 70% 二选一"。
         void ApplyMedicine(float chance, string name)
         {
             if (S.rng.NextDouble() < chance)
@@ -2057,7 +2379,15 @@ namespace SixtySLike
         //       并且一晚只能做一件事(§2.3 夜用规则);"尝试睡去" = 这一晚的"什么都不做"。
         bool night;
         bool nightDone;
+        // v0.86(用户:"宁静的夜对话没有回复队友精神?检查一下"):聊过之后的 **这个清晨** 不再掷
+        //   "精神随机掉层"。`CalmTalk()` 明明写了 -2 层,但紧接着的 `TickTeammate()` 有 35% 掷一次掉层,
+        //   会把回升当场抵掉(精神在"孤独"时 +2 到"良好"、再掉回"孤独" = 看起来一点没回)。
+        //   白天谈话走的是同一个清晨,所以两条入口都置位;`OnDawn` 结算完这一晨后复位。
+        bool talkedSinceDawn;
         bool mazeOpen;      // v0.75:毒虫迷宫开着时挡住"同一晚再开一场"(结算只等那一次回调)
+        // v0.91:跳杀 / 驱散 期间再点任何东西都不该结算第二遍(动画是异步的,`nightDone` 还没落下)。
+        bool nightBusy;
+        GameObject shadowBody;      // 这一晚场上的影怪 / 小影怪(在 props 里,重建时一起销毁)
         // v0.30:nightLine 现在 **只** 装"点了但今晚帮不上忙"这类拒绝提示 ——
         //        夜晚的结算文本已经整体搬进日记(天亮时自动翻开那一页)。
         string nightLine;
@@ -2067,6 +2397,7 @@ namespace SixtySLike
             if (S.stats.staminaMax != B.staminaMax) S.stats.staminaMax = B.staminaMax;   // 飞行员 buff 只当天
             NightResolver.Begin(root);
             night = true; nightDone = false; nightLine = null;
+            nightBusy = false;
             // v0.46(用户):信号火堆 在烧 ⇒ 救援事件不需要选道具,那一晚直接判定通过。
             //   这一晚因此"已经过去"了:再点任何物品都不该二次结算(否则同晚会出两个结局判定),
             //   屏幕上只留那颗 闭上眼 按钮(SleepLabel 读 HasPending 换的词)。
@@ -2074,6 +2405,13 @@ namespace SixtySLike
             {
                 nightDone = true;
                 nightLine = "沙丘上那道火柱替你答了这一晚 —— 不需要你再动手。";
+            }
+            // v0.83:火还烧着 ⇒ 低温夜 / 影怪 在摊开那一刻就解决了,这一晚也没有可点的选项。
+            //   影怪 若仍保留"推箱子"(真结局 T),则这一晚不许自动收口 —— 选项按钮要留着。
+            else if (NightResolver.AutoResolved && !NightResolver.AutoKeepsOffer)
+            {
+                nightDone = true;
+                nightLine = NightResolver.AutoLine;
             }
             SetNightLook(true);
             // v0.49(用户:"夜晚根据事件的不同选择合适的bgm"):表在 `Music.Spooky` 那一处 ——
@@ -2084,11 +2422,15 @@ namespace SixtySLike
 
         void DoNight(GameChoiceSO c)
         {
-            if (nightDone) return;
+            if (nightDone || nightBusy) return;
             // v0.75(用户 v0.71 的裁定):**只有 `snake` 事件的 `swat` 走迷宫**;其余选项、其余事件一行不改。
             //   迷宫结束后再结算:走到出口 ⇒ "你赶走了它";被追上 / 30 秒到点 ⇒ 原 `SnakeBite` 那条路。
             //   ⚠ `mazeOpen` 只是防连点:同一个按钮在一次结算里只能开一场迷宫。
-            if (NightResolver.Current == DB.Snake && c.key == "swat")
+            // v0.84(用户:"影怪QTE也改为迷宫吧,需要有毯子才能触发"):`shadow` 的 `hide` 走同一张迷宫,
+            //   结算只认"跑没跑到出口"(伤害减半 / 全额);毯子的门槛在 `AvailableChoices` 里(选项不生成)。
+            bool snakeMaze = NightResolver.Current == DB.Snake && c.key == "swat";
+            bool shadowMaze = NightResolver.Current == DB.Shadow && c.key == "hide";
+            if (snakeMaze || shadowMaze)
             {
                 if (mazeOpen) return;
                 mazeOpen = true;
@@ -2096,17 +2438,61 @@ namespace SixtySLike
                 {
                     mazeOpen = false;
                     if (nightDone || S.phase != RunPhase.Island) return;
-                    NightResolver.Choose(c, escaped);
-                    nightDone = true;
-                    EndNightOrRefresh();
+                    ResolveNightChoice(c, escaped);
+                }, shadowMaze ? SnakeMazeView.ShadowTitle : SnakeMazeView.DefaultTitle,
+                   shadowMaze ? SnakeMazeView.ShadowHint : SnakeMazeView.DefaultHint);
+                return;
+            }
+            // v0.91(用户:"使用手电筒则让影怪直接消失(两个影怪都有效)"):先把场上那只散掉,再落结算。
+            //   ⚠ 动画期间 `nightBusy` 挡住第二次结算(它是异步的,`nightDone` 这时还没落下)。
+            if (c.key == "flashlight" &&
+                (NightResolver.Current == DB.Shadow || NightResolver.Current == DB.SmallShadow))
+            {
+                nightBusy = true;
+                IslandProp.Blocked = true;
+                ShadowVanishFx.Play(root, shadowBody, () =>
+                {
+                    IslandProp.Blocked = false;
+                    nightBusy = false;
+                    if (nightDone || S.phase != RunPhase.Island) return;
+                    ResolveNightChoice(c, null);
                 });
                 return;
             }
-            // v0.30:夜晚不再显示"结算文本" —— 那一晚发生了什么,天亮时在日记里读。
-            //        返回值仍然被 Log 到控制台(调试通道)。
-            NightResolver.Choose(c);
+            ResolveNightChoice(c, null);
+        }
+
+        // v0.91:所有夜晚选项的结算都从这里过(手电筒 / 迷宫 / 普通点击),这样"跳杀"只有一处判据:
+        //   大影怪 = 没跑掉或什么都不做;小影怪 = 结算前队友还在、结算后没了(= 被拖走,含火撑失败)。
+        //   ⚠ 不去复制 `NightResolver` 里的随机数,避免两本账。
+        void ResolveNightChoice(GameChoiceSO c, bool? mazeEscaped)
+        {
+            var ev = NightResolver.Current;
+            bool mateBefore = S.mate.present;
+            NightResolver.Choose(c, mazeEscaped);
+            bool hit = false;
+            if (ev == DB.Shadow)
+                hit = c.key == "nothing" || (c.key == "hide" && mazeEscaped != true);
+            else if (ev == DB.SmallShadow && mateBefore && !S.mate.present)
+                hit = true;
+            if (hit) { PlayShadowScare(ev == DB.SmallShadow); return; }
             nightDone = true;
             EndNightOrRefresh();
+        }
+
+        void PlayShadowScare(bool small)
+        {
+            nightBusy = true;
+            IslandProp.Blocked = true;       // 跳杀期间沙滩上的东西还在画面里,但这一镜不许点
+            ShadowScareCutscene.Play(root, transform, small ? "ghostskull" : "ghost", small ? 1.5f : 2.6f,
+                shadowBody, () =>
+                {
+                    IslandProp.Blocked = false;
+                    nightBusy = false;
+                    if (nightDone || S.phase != RunPhase.Island) return;
+                    nightDone = true;
+                    EndNightOrRefresh();
+                });
         }
 
         // v0.15:夜晚没有"天亮 →"这一步。做了应对(或选了睡去)就直接进早上;
@@ -2119,7 +2505,9 @@ namespace SixtySLike
 
         void CalmTalkNow()
         {
+            if (nightDone) return;           // 点队友 / 点新按钮是两条入口,防同一晚聊两次(double)
             NightResolver.CalmTalk();        // v0.30:结算文本改由日记承担
+            talkedSinceDawn = true;          // v0.86:这一晨不许随机掉层把刚回升的精神抵掉
             nightDone = true;
             EndNightOrRefresh();
         }
@@ -2130,10 +2518,29 @@ namespace SixtySLike
 
         void OnSleep()
         {
-            if (NightResolver.HasPending) { root.EndRun(NightResolver.Pending); return; }
+            if (NightResolver.HasPending)
+            {
+                var pending = NightResolver.Pending;
+                // v0.79:A/H 先在活着的世界里演完"船靠岸 → 镜头飞向甲板",再换结局屏。
+                //   其余结局(T/B/C/F)仍是当场换屏 —— 它们没有这一镜。
+                // v0.80:搜寻飞机 也通向 A,但它是飞机救的 —— 不能开一艘邮轮过来。
+                // v0.81:它现在有自己的那一镜(直升机落到岛心 → 镜头到舱门),所以分流到 `BeginHelicopterEnding`。
+                if (pending == EndingId.A && NightResolver.PendingByPlane) { BeginHelicopterEnding(); return; }
+                if (ShipEndingCutscene.Handles(pending)) { BeginShipEnding(pending); return; }
+                root.EndRun(pending); return;
+            }
             if (!nightDone)
             {
+                if (nightBusy) return;
+                // v0.91:"尝试睡去"就是那条 alwaysAvailable 的"什么都不做" —— 影怪 那一晚也要跳杀。
+                //   结算后按结果判(大影怪 = 什么都没做;小影怪 = 队友没了),不复制结算里的随机数。
+                var ev = NightResolver.Current;
+                bool mateBefore = S.mate.present;
                 NightResolver.Sleep();       // v0.30:结算文本改由日记承担
+                bool hit = ev == DB.Shadow && NightResolver.LastChoice != null &&
+                           NightResolver.LastChoice.key == "nothing";
+                if (ev == DB.SmallShadow && mateBefore && !S.mate.present) hit = true;
+                if (hit) { PlayShadowScare(ev == DB.SmallShadow); return; }
                 nightDone = true;
                 EndNightOrRefresh();
                 return;
@@ -2144,19 +2551,111 @@ namespace SixtySLike
         void OnDawn()
         {
             night = false; nightDone = false; nightLine = null;
+            nightBusy = false;
             NightResolver.End();
             SetNightLook(false);
             Music.Day(S.day);       // v0.49(用户:"生存阶段的音乐要平静旷远,有海边的感觉")—— 按天在两首轮换
             root.ClearModal();
-            if (S.stats.hp <= 0) { root.EndRun(EndingResolver.DeathEnding(S)); return; }
-            if (S.gull.presentCount >= B.gullEndingCount) { root.EndRun(EndingId.I); return; }
+            if (S.stats.hp <= 0) { BeginDeathEnding(); return; }
+            // v0.78:结局 I 不再"当场换屏" —— 世界还活着的时候先把 §4.7 那一镜播完,再 EndRun。
+            if (S.gull.presentCount >= B.gullEndingCount) { BeginGullEnding(); return; }
             // v0.30:先把"第 N 天"这一页封口(此时 S.day 还是 N,MorningTick 才 +1),再翻给他看。
             int page = S.day;
             S.SealDiary();
             MorningTick(false);
-            if (S.phase != RunPhase.Island) return;      // 清晨结算里可能直接进结局,那时别再叠一层日记
+            talkedSinceDawn = false;        // v0.86:聊天保护只覆盖紧接的那个清晨
+            // v0.78:过场期间阶段仍是 Island(世界要活着),所以不能只靠 `phase != Island` 判断"别叠日记"。
+            if (S.phase != RunPhase.Island || gullEnding) return;      // 清晨结算里可能直接进结局,那时别再叠一层日记
             Refresh();
             OpenDiary(page);
+        }
+
+        // v0.78:结局 I 的过场入口。两处触发(MorningTick / OnDawn)都走这里,`EndRun(I)` 只在过场演完后发生一次。
+        //   ⚠ 它做的事全是"把这一局收干净":清 HUD/弹层、禁自由视角、禁点击、收起场上那 4 只海鸥 ——
+        //     否则过场里会出现 8 只海鸥 / 玩家还能点开日记或物品。
+        void BeginGullEnding()
+        {
+            if (gullEnding) return;
+            gullEnding = true;
+            night = false; nightDone = false; nightLine = null;
+            dayPanel = false;
+            SetNightLook(false);                 // 过场是白天那一镜(OnDawn 已经调用过;这里覆盖"从清晨结算触发"那条)
+            root.ClearModal();
+            root.ClearHud();
+            IslandProp.Blocked = true;           // 沙滩上的东西还在画面里,但这一镜不许点
+            for (int i = 0; i < props.Count; i++)
+                if (props[i] != null && props[i].GetComponentInChildren<GullFlap>(true) != null)
+                    props[i].SetActive(false);   // 同一批海鸥不重复上场:这一镜的四只由 cutscene 自己摆
+            root.ApplyIslandView("结局 I 过场");
+            GullEndingCutscene.Play(root, transform, S.hidden.nameTagTaken,
+                                    () => root.EndRun(EndingId.I));
+        }
+
+        // v0.79:A(获救 / 邮轮)与 H(幽灵船)的过场入口。
+        //   两件事必须在这里做完:① 把 HUD/弹层/点击闸全关掉(镜头要飞过整个岛);
+        //   ② 把结算推迟到 `onDone` —— `EndingPhase` 一来就拆 Island 层,过场没有地方演。
+        //   ⚠ **不调 `SetNightLook(false)`**:这一镜发生在夜里,天亮不是它的前提。
+        void BeginShipEnding(EndingId id)
+        {
+            if (shipEnding) return;
+            shipEnding = true;
+            dayPanel = false;
+            root.ClearModal();
+            root.ClearHud();
+            IslandProp.Blocked = true;           // 岛上的东西还在画面里,但这一镜不许点
+            // 夜里玩家本来就被按在固定机位;这里再确认一次,过场的起手镜头才有确定的位姿。
+            root.ApplyIslandView("结局 " + id + " 过场");
+            ShipEndingCutscene.Play(root, transform, id, () => root.EndRun(id));
+        }
+
+        // v0.81:搜寻直升机 救走的 A —— 落到岛心、镜头移到舱门,再换结局屏。
+        //   与邮轮那一镜一样:结算推迟到 `onDone`,过场期间关掉 HUD/弹层/点击/自由视角。
+        //   ⚠ 那一晚远处还有一架"掠过"的直升机剪影(`DistantHelicopter`),它必须退场 ——
+        //     否则画面上会同时出现两架(与 v0.78 收起场上 4 只海鸥同一条理由)。
+        void BeginHelicopterEnding()
+        {
+            if (heliEnding) return;
+            heliEnding = true;
+            dayPanel = false;
+            root.ClearModal();
+            root.ClearHud();
+            IslandProp.Blocked = true;
+            for (int i = 0; i < props.Count; i++)
+                if (props[i] != null && props[i].name == "DistantHelicopter")
+                    props[i].SetActive(false);
+            root.ApplyIslandView("结局 A 直升机过场");
+            HelicopterEndingCutscene.Play(root, transform, () => root.EndRun(EndingId.A));
+        }
+
+        // v0.90:所有"死在岛上"的判定走这一个口 —— C 先演镜头推近骸骨,F(回环)仍当场换屏。
+        //   四处调用(MorningTick / OnDawn / Damage / CheckDeath)都别自己再拼一遍 DeathEnding。
+        void BeginDeathEnding()
+        {
+            var id = EndingResolver.DeathEnding(S);
+            if (id != EndingId.C) { root.EndRun(id); return; }
+            BeginBonesEnding();
+        }
+
+        // v0.90:结局 C 的过场入口。把 HUD/弹层/点击/自由视角全关掉,骸骨在 `bonesAnchor` 原地摆一具,
+        //   相机从固定机位推近,压黑后才 EndRun(C)。
+        void BeginBonesEnding()
+        {
+            if (bonesEnding) return;
+            bonesEnding = true;
+            dayPanel = false;
+            root.ClearModal();
+            root.ClearHud();
+            IslandProp.Blocked = true;
+            var spot = BonesEndingCutscene.SpotFrom(root.islandStage);
+            // 骸骨事件那一晚摆的是胶囊;过场自己摆完整骨架 ⇒ 只收那一件,别把站在旁边的队友/道具也藏了。
+            for (int i = 0; i < props.Count; i++)
+            {
+                if (props[i] == null || props[i].name.StartsWith("mate_", System.StringComparison.Ordinal)) continue;
+                if (props[i].name == "bones" || props[i].name == "骸骨" || props[i].name == "skeleton")
+                    props[i].SetActive(false);
+            }
+            root.ApplyIslandView("结局 C 过场");
+            BonesEndingCutscene.Play(root, transform, spot, () => root.EndRun(EndingId.C));
         }
 
         void SetNightLook(bool on)
@@ -2242,10 +2741,15 @@ namespace SixtySLike
             dim.GetComponent<Image>().raycastTarget = false;      // 遮罩不吃鼠标:沙滩上的东西照样能点
 
             var ev = NightResolver.Current;
-            Ui.Label(rt, "nighthead", "第 " + S.day + " 夜 · " + (NightResolver.Calm ? "今夜无事发生" : ev.displayName),
+            // v0.84(用户:"这个的文案是宁静的夜,可以免费聊天(有一个与队友聊天的按钮)"):
+            //   标题不再写"今夜无事发生",改成"宁静的夜";能聊的那一晚把这句话写在描述里。
+            string head = NightResolver.Calm ? "宁静的夜" : ev.displayName;
+            Ui.Label(rt, "nighthead", "第 " + S.day + " 夜 · " + head,
                      26, TextAnchor.UpperCenter, new Color(1f, 0.85f, 0.5f),
                      new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -46), new Vector2(0, -12));
-            string desc = NightResolver.Calm ? "" : ev.description;
+            string desc = NightResolver.Calm
+                ? (NightResolver.CalmTalkOffered ? "可以免费和队友说说话。" : "今夜什么也没有发生。")
+                : ev.description;
             if (ev == DB.MonkeyNaughty && NightResolver.StolenName != null) desc += "(它抢走的是:" + NightResolver.StolenName + ")";
             // v0.33:友善的狐狸 也要把"换出哪件 / 换入哪件"写在屏幕上(这一对在本晚摊开时就已经定好,
             //        点"交易"只是执行它 —— 见 NightResolver.PickTrade)
@@ -2271,6 +2775,15 @@ namespace SixtySLike
             var loose = new List<GameChoiceSO>(NightResolver.ChoicesByTarget("strip"));
             foreach (var c in NightResolver.ChoicesWithoutObject()) if (!loose.Contains(c)) loose.Add(c);
             float y = 90;
+            // v0.84(用户:"有一个与队友聊天的按钮"):宁静的夜、队友在、精神还没到顶 ⇒ 给一个 **看得见的**
+            //   免体力聊天入口。判据沿用 `CalmTalkOffered`(与点队友那颗胶囊同一条),不另写一份条件。
+            if (NightResolver.CalmTalkOffered)
+            {
+                Ui.Button(rt, "calmtalk", "和队友说说话(免体力)", 15, CalmTalkNow,
+                          new Color(0.20f, 0.34f, 0.42f, 1f),
+                          new Vector2(0, 0), new Vector2(0, 0), new Vector2(16, y), new Vector2(392, y + 52));
+                y += 56;
+            }
             foreach (var c in loose)
             {
                 var cc = c;

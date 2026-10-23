@@ -50,7 +50,7 @@ namespace SixtySLike
                 return;
             }
             B = DB.bal;
-            Bag(); Monkey(); Breakage(); Prices(); Balance(); ExploreDice(); MaterialBudget(); FishMiss(); Names(); Endings(); Inv(); MateMeal(); V045(); V046(); V047(); V049(); V049T(); V051(); V052(); V053(); V055(); V057(); V058(); V061(); V062(); V063(); V064(); V065(); V066(); V067(); V068(); V069(); V075();
+            Bag(); Monkey(); Breakage(); Prices(); Balance(); ExploreDice(); MaterialBudget(); FishMiss(); Names(); Endings(); Inv(); MateMeal(); V045(); V046(); V047(); V049(); V049T(); V051(); V052(); V053(); V055(); V057(); V058(); V061(); V062(); V063(); V064(); V065(); V066(); V067(); V068(); V069(); V075(); V076(); V078(); V079(); V080(); V081(); V082(); V083(); V084(); V085(); V086(); V087(); V088(); V089(); V090(); V091(); V092();
 
             var sb = new StringBuilder("=== 60slike demo 自检 ===\n");
             if (fails.Count == 0) sb.Append("SELFCHECK PASS:全部通过\n");
@@ -988,8 +988,10 @@ namespace SixtySLike
             if (st == null) { Debug.Log("[自检] v0.53:当前场景没开 Demo ⇒ 跳过自由视角那两条区域检查。"); return; }
 
             // 该走得到的落点:24 个道具格 + 篝火 + 尸骨 + 队友 + 钓竿(它现在在海边)+ 出生点自身要合法。
-            // ⚠ **显式排除 大海 与 海鸥**:v0.57 之后 大海 那块板就在水线 **之外**(`WaterR` 外 1.5 米)、
-            //   海鸥 在 2.6 米空中 —— 按用户裁定的"不能下水",这两块 **走不到跟前**,所以 E 不覆盖它们(鼠标点仍然是入口)。
+            // ⚠ **显式排除 大海 与 海鸥锚点**:v0.57 之后 大海 那块板就在水线 **之外**(`WaterR` 外 1.5 米)、
+            //   `gullAnchor` 仍在 2.6 米空中 —— 按用户裁定的"不能下水",这两块 **走不到跟前**,所以 E 不覆盖它们。
+            //   ⚠ v0.77:这里排除的是 **锚点**;夜里海鸥已按 `GullPerchPos` 落到地面(E 够得着),
+            //     白天飞行中的海鸥根本没有可点物体 —— 三者不要混成一句"海鸥走不到"。
             //   把它们写进"应该走得到"的名单会让检查天天红;把它们悄悄漏掉又会让检查说谎 ⇒ 列在这儿并注明理由。
             var reach = ScavengingPhase.Reach;
             var spawn = IslandWalk.ClampToBeach(IslandWalk.Spawn);
@@ -1529,11 +1531,11 @@ namespace SixtySLike
         //   只验 **纯逻辑**(生成 / 连通 / 距离 / A* / 兜底图 / 文案),不碰画面与 UI 布局。
         static void V075()
         {
-            // ① 常量:速度与限时是用户亲手给的数(1 格/秒 / 0.7 格/秒),改它们就是改手感,必须在自检里响
+            // ① 常量:速度与限时是用户亲手给的数(v0.86 改成 3 / 2.4,蛇 = 玩家 ×0.8),改它们就是改手感
             Eq(SnakeMaze.W, 15, "v0.75 ①:迷宫宽应为 15 格");
             Eq(SnakeMaze.H, 11, "v0.75 ①:迷宫高应为 11 格");
-            Eq(SnakeMaze.PlayerSpeed, 1f, "v0.75 ①:玩家速度应为 1 格/秒(用户裁定)");
-            Eq(SnakeMaze.SnakeSpeed, 0.7f, "v0.75 ①:蛇速度应为 0.7 格/秒(用户裁定)");
+            Eq(SnakeMaze.PlayerSpeed, 3f, "v0.86 ①:玩家速度应为 3 格/秒(用户裁定)");
+            Eq(SnakeMaze.SnakeSpeed, 2.4f, "v0.86 ①:蛇速度应为玩家的 0.8 倍 = 2.4 格/秒(用户裁定)");
             Eq(SnakeMaze.TimeLimit, 30f, "v0.75 ①:迷宫限时应为 30 秒(用户裁定)");
             Eq(SnakeMaze.FallbackMaps.Length, 5, "v0.75 ①:手写兜底图应为 5 张(用户裁定「5张」)");
 
@@ -1562,8 +1564,9 @@ namespace SixtySLike
                             { pathOk = false; break; }
                         }
                     if (!pathOk) { badPath++; ok = false; }
-                    // 30 秒的账:玩家 1 格/秒 ⇒ 理想路线必须 **明显短于** 限时,否则"没到出口算被咬"
-                    // 会变成"这张图本来就赢不了"。>24 格已经只剩 6 秒余量,再长就是设计错。
+                    // 理想路线必须明显短于限时,否则"没到出口算被咬"会变成"这张图本来就赢不了"。
+                    // v0.86 玩家 3 格/秒、30 秒可走 90 格,>24 步(=8 秒)的余量更大;这条仍按 **生成器**
+                    // 的上界钉住(出口档不该被后来的改动拉长),不随速度放宽。
                     else if (path.Count - 1 > 24) { badFeasible++; ok = false; }
                 }
                 if (!ok && firstBad.Length == 0) firstBad = "首个不合格种子 " + seed;
@@ -1575,7 +1578,7 @@ namespace SixtySLike
             Check(badConn == 0, "v0.75 ②:" + badConn + "/200 张图不连通(玩家→出口 或 蛇→玩家)");
             Check(badPath == 0, "v0.75 ②:" + badPath + "/200 张图的 A* 路径缺失 / 穿墙 / 首尾不对");
             Check(badFeasible == 0, "v0.75 ②:" + badFeasible + "/200 张图的理想路线超过 24 格 —— " +
-                  "玩家 1 格/秒、限时 30 秒 ⇒ 这些图本来就走不完(出口不该放在那么远)");
+                  "玩家 3 格/秒、限时 30 秒 ⇒ 24 步只要 8 秒,这些图是生成器把出口放远了");
 
             // 同一个种子必须给同一张图(调试与复现都靠这条;A* 的 tie-break 也是写死的)
             Vector2Int p1, e1, s1, p2, e2, s2;
@@ -1656,6 +1659,1234 @@ namespace SixtySLike
                       " 格/秒 / 蛇 " + SnakeMaze.SnakeSpeed + " 格/秒 / 限时 " + SnakeMaze.TimeLimit + " 秒;" +
                       "200 个随机种子 + 5 张手写图全部连通、蛇起点 ≥5 格;swat 不再掷骰。" +
                       "⚠ swat 文案改了表,要跑菜单① 才会刷进资产。");
+        }
+
+        static void V076()
+        {
+            // ① 迷宫配色(用户:"墙黑色,路白色,特殊路径使用黑色的邻近色")
+            //   ⚠ 只钉"路亮、墙黑、出口是黑的邻居"这三件事,不钉具体色号 —— 色号以后可以微调。
+            var path = SnakeMazeView.PathColor;
+            var wall = SnakeMazeView.WallColor;
+            var exit = SnakeMazeView.ExitColor;
+            Check(path.r >= 0.98f && path.g >= 0.98f && path.b >= 0.98f,
+                  "v0.76 ①:路面应是白色(用户:「路白色」),实际 " + path);
+            Check(wall.r <= 0.02f && wall.g <= 0.02f && wall.b <= 0.02f,
+                  "v0.76 ①:墙应是黑色(用户:「墙黑色」),实际 " + wall);
+            Check(exit.r > wall.r && exit.r < 0.25f && exit.g < 0.25f && exit.b < 0.25f,
+                  "v0.76 ①:特殊格(出口)应是黑色的邻近色,不能与墙同色也不能是金色,实际 " + exit);
+
+            // ② 格子坐标 → 板上的锚点:用 **已知真值** 念一遍
+            //   v0.75 的 bug 就是这条映射给连续坐标又加了 0.5 ⇒ 方块偏半格,看起来像"方块穿墙、碰撞不对"。
+            //   旧写法下 (0,0) 会落在 (40,-40)、(1,9) 落在 (80,-400) —— 这两条就是这个 bug 的钉子。
+            Eq(SnakeMazeView.MarkAnchor(SnakeMazeView.CellCenter(new Vector2Int(0, 0))), new Vector2(20f, -20f),
+               "v0.76 ②:格 (0,0) 的中心应画在 (20,-20) —— 偏半格就是用户报的「碰撞有问题」");
+            Eq(SnakeMazeView.MarkAnchor(SnakeMazeView.CellCenter(new Vector2Int(1, 9))), new Vector2(60f, -380f),
+               "v0.76 ②:格 (1,9) 的中心应画在 (60,-380)");
+
+            // ③ 海鸥只属于海鸥线;飞机只在搜寻飞机那一晚
+            Vector3 gullEuler;
+            Check(World.PlacementEuler("gull", out gullEuler) && Mathf.Abs(Mathf.DeltaAngle(gullEuler.x, 90f)) < 0.01f,
+                  "v0.76 ③:海鸥的姿势修正应是 +90°X —— FBX 节点链净 -90°X 会让它直立(用户:「现在是直立的」)");
+            // 用户 v0.76 追加:"海鸥就是那四只海鸥线的海鸥,不需要一直挂着一只" ⇒ 天上常驻编队整个删除。
+            //   源码扫描先剔注释(§11-121):文件里"已删除 SkyGull"这类说明不算回潮。
+            // v0.77:白天绕岛飞 **重新引入 `GullCircle`**,但它只允许被 `FlyingGull` 用一次、且实例数仍归海鸥线;
+            //   仍然禁止的是 v0.75 那支"进场就挂 4 只"的 `SkyGull` / `Wildlife.Attach`。
+            string wl = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/Wildlife.cs");
+            string ip = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/IslandPhase.cs");
+            Check(wl.IndexOf("SkyGull", System.StringComparison.Ordinal) < 0,
+                  "v0.76 ③:Wildlife 里又出现了常驻海鸥(SkyGull)—— 用户:「不需要一直挂着一只」");
+            Check(ip.IndexOf("Wildlife.Attach", System.StringComparison.Ordinal) < 0,
+                  "v0.76 ③:IslandPhase 又 attach 了常驻海鸥编队(用户:「不需要一直挂着一只」)");
+            Check(ip.IndexOf("for (int i = 0; i < S.gull.presentCount; i++)", System.StringComparison.Ordinal) >= 0,
+                  "v0.76 ③:海鸥的摆放必须按 S.gull.presentCount(线没触发 = 0 只)");
+            // v0.77:两支演出都必须在 —— 白天 `FlyingGull`(绕岛),夜里 `GullPerchPos`(落地)。
+            Check(ip.IndexOf("S.gull.presentCount > 0 && night", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("FlyingGull(", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("GullPerchPos(", System.StringComparison.Ordinal) >= 0,
+                  "v0.77 ③:海鸥必须分白天(绕岛飞)/ 夜晚(落地)两支 —— 用户:「白天海鸥绕岛飞,夜晚海鸥停留在陆地上」");
+            // 绕岛半径必须在浪线之外:否则航迹横穿营地,飞行中又没 collider,会从可点物上面扫过去。
+            for (int i = 0; i < 4; i++)
+            {
+                float r, h, sp, ph;
+                IslandPhase.GullFlightRoute(i, out r, out h, out sp, out ph);
+                Check(r > IslandTerrain.WaterR + 5f && h > 2f && h < 5.5f,
+                      "v0.77 ③:第 " + i + " 只海鸥的航线(r=" + r + ", h=" + h + ")越界了 —— 半径要在浪线外、" +
+                      "高度要落在固定镜头看得见的那一条海里");
+            }
+            // 夜里是"陆地"不是旧锚点那 2.6 米空中:`GullPerchPos` 的 y 必须取地形高度。
+            var perch = IslandPhase.GullPerchPos(new Vector3(-8.5f, 2.6f, -3.5f), 0);
+            Check(Mathf.Abs(perch.y - IslandTerrain.GroundY(perch.x, perch.z)) < 0.001f && perch.y < 0.5f,
+                  "v0.77 ③:夜里的海鸥没有落到地面(y=" + perch.y + ")—— 用户:「夜晚海鸥停留在陆地上」");
+            // 直升机:v0.76「只有一架...且只在触发的时候才有动画」⇒ 判据只认 searchplane。
+            Check(IslandPhase.DistantHelicopterTonight(DB.SearchPlane, DB.SearchPlane),
+                  "v0.76 ③:searchplane 那一晚应摆直升机");
+            Check(!IslandPhase.DistantHelicopterTonight(DB.Snake, DB.SearchPlane) &&
+                  !IslandPhase.DistantHelicopterTonight(null, DB.SearchPlane),
+                  "v0.76 ③:非 searchplane 的晚上不该有直升机(用户:「只在触发的时候才有动画」)");
+
+            Debug.Log("[自检] v0.76/77:迷宫 路白/墙黑/出口近黑;标记坐标无半格偏移;" +
+                      "海鸥 +90°X、只属于海鸥线,白天绕岛(半径在浪线外)、夜里落在地面;" +
+                      "直升机只在 searchplane 那一晚出现。");
+        }
+
+        static void V078()
+        {
+            // ① **结局 I 只能从过场进**:两个触发点都必须改叫 `BeginGullEnding`(立即 return),
+            //   `EndRun(I)` 只剩过场回调那一处。这一条钉的是"世界还活着的时候把 §4.7 那一镜播完"——
+            //   谁把触发改回"当场换屏",`EndingPhase` 一来就把 Island 层连同相机关掉,过场根本没地方演。
+            string ip = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/IslandPhase.cs");
+            Eq(Count(ip, "root.EndRun(EndingId.I)"), 1,
+               "v0.78 ①:EndRun(I) 只该在过场回调里出现一次(两次触发应走 BeginGullEnding)");
+            Eq(Count(ip, "BeginGullEnding();"), 2,
+               "v0.78 ①:MorningTick / OnDawn 两个触发点都要走 BeginGullEnding");
+            Check(ip.IndexOf("S.phase != RunPhase.Island || gullEnding", System.StringComparison.Ordinal) >= 0,
+                  "v0.78 ①:OnDawn 的后续闸里少了 gullEnding —— 过场期间还会继续写日记/Refresh");
+            Check(ip.IndexOf("walk.forbidFreeLook = () => night || gullEnding", System.StringComparison.Ordinal) >= 0,
+                  "v0.78 ①:自由视角必须在过场期间也禁掉(`wanted` 会在天亮后自动重进第一人称)");
+            Check(ip.IndexOf("GetComponentInChildren<GullFlap>", System.StringComparison.Ordinal) >= 0,
+                  "v0.78 ①:开演前要把场上那几只海鸥收起来,否则 4 + 4 = 8 只同屏");
+            Check(ip.IndexOf("IslandProp.Blocked = true", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("IslandProp.Blocked = false", System.StringComparison.Ordinal) >= 0,
+                  "v0.78 ①:过场要把沙滩的点击闸关上,并在进/出阶段两处都交还(静态开关不能带进下一局)");
+            string stage = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/IslandStage.cs");
+            Check(stage.IndexOf("public static bool Blocked", System.StringComparison.Ordinal) >= 0 &&
+                  stage.IndexOf("!Blocked && onClick", System.StringComparison.Ordinal) >= 0,
+                  "v0.78 ①:IslandStage 的两条点击入口(左键 / 悬浮)都要认 Blocked");
+
+            // ② 数与路线:四只、时长分段单调、直接被叼起、最后飞出岛外(v0.89 无拖行)。
+            Eq(GullEndingCutscene.GullCount, B.gullEndingCount,
+               "v0.78 ②:过场里的海鸥数必须等于数据里的 gullEndingCount");
+            Check(GullEndingCutscene.ArriveAt > 0f && GullEndingCutscene.LiftEnd > GullEndingCutscene.ArriveAt &&
+                  GullEndingCutscene.FadeFrom > GullEndingCutscene.LiftEnd &&
+                  GullEndingCutscene.Duration > GullEndingCutscene.FadeFrom,
+                  "v0.78 ② / v0.89:时间轴必须 落定 < 离地 < 压黑 < 结束(否则会先飞后落/黑屏截断)");
+            Vector3 a, sky;
+            GullEndingCutscene.Route(out a, out sky);
+            Check(IslandTerrain.OnLand(a.x, a.z),
+                  "v0.78 ② / v0.89:骸骨落点必须在陆地上(不在海里演)");
+            // v0.88 ②:终点改成"岛心 → 骨架落点"的径向朝外 ⇒ 这里按 **距岛心 / 高度** 判(不再写死 -z)。
+            float skyR = Vector2.Distance(new Vector2(sky.x, sky.z), IslandTerrain.Center);
+            Check(sky.y >= a.y + 18f && skyR >= IslandTerrain.WaterR + 10f,
+                  "v0.78 ② / v0.88 ②:终点必须是「天边」—— 抬高 18 米以上、飞出浪线之外,实际 " + sky);
+            // 不复用玩家见过的那副:`bonesAnchor` 上那摊尸骨不许当过场道具。
+            var st = UnityEngine.Object.FindObjectOfType<IslandStage>();
+            if (st != null && st.bonesAnchor != null)
+                Check(Vector3.Distance(new Vector3(a.x, 0f, a.z),
+                                       new Vector3(st.bonesAnchor.position.x, 0f, st.bonesAnchor.position.z)) >= 2.5f,
+                      "v0.78 ②:过场骨架落在 bonesAnchor 旁边了 —— 用户见过的那副不能被复用");
+            // 四个方向:每只的方位角落在不同的象限。
+            bool[] q = new bool[4];
+            for (int i = 0; i < GullEndingCutscene.GullCount; i++)
+            {
+                Vector3 d; float h;
+                GullEndingCutscene.Slot(i, out d, out h);
+                q[(d.x >= 0f ? 1 : 0) + (d.z >= 0f ? 2 : 0)] = true;
+                Check(h > 2f, "v0.78 ②:第 " + i + " 只海鸥的入场高度太低,会从沙里钻出来");
+            }
+            Check(q[0] && q[1] && q[2] && q[3],
+                  "v0.78 ②:四只海鸥必须来自四个方向(用户:「四只海鸥从四个方向落下」)");
+            // 铭牌变体:拿过 ⇒ 空着;没拿过 ⇒ 留一块。
+            Check(!GullEndingCutscene.ShowsTag(true) && GullEndingCutscene.ShowsTag(false),
+                  "v0.78 ②:nameTagTaken 变体反了(拿过铭牌 ⇒ 骨架胸口应空着,且不解释)");
+
+            // ③ 枢轴偏移那一条(实施时差点翻车):`PlaceModel` 把 AABB 底面贴到落点,枢轴并不在落点,
+            //   每帧直接 `skel.position = pos` 会让骨架先陷进沙里再被拎起。凡移动都得带 `skelOffset`。
+            string wl = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/Wildlife.cs");
+            Check(wl.IndexOf("skelOffset = skel.position - spot", System.StringComparison.Ordinal) >= 0 &&
+                  wl.IndexOf("skel.position = pos + skelOffset", System.StringComparison.Ordinal) >= 0,
+                  "v0.78 ③:骨架移动丢了枢轴偏移(PlaceModel 的枢轴不在落点上)");
+            Check(wl.IndexOf("public static bool ShowsTag", System.StringComparison.Ordinal) >= 0 &&
+                  wl.IndexOf("World.PlaceModel(transform, \"skeleton\", false, spot", System.StringComparison.Ordinal) >= 0,
+                  "v0.78 ③ / v0.83 ⑥:过场骨架必须新摆一具(不复用 bonesAnchor 上那副;v0.83 起模型是 skeleton)");
+
+            Debug.Log("[自检] v0.78:结局 I 先演后换屏 —— 两个触发点都进 BeginGullEnding,EndRun(I) 只在回调里;" +
+                      "过场期间日记/Refresh/自由视角/沙滩点击全关;" + GullEndingCutscene.GullCount + " 只海鸥四向落下," +
+                      "原地叼起骨架直接飞出岛外(v0.89 起无拖行、无拖痕),铭牌按 nameTagTaken 取舍。");
+        }
+
+        static void V079()
+        {
+            // ① A/B/H 共用这一镜,区别只在甲板上有没有人。
+            //    v0.90(用户:"五十天使用轮船获救结局")⇒ B 并进来,甲板照样有人。
+            Check(ShipEndingCutscene.Handles(EndingId.A) && ShipEndingCutscene.Handles(EndingId.B) &&
+                  ShipEndingCutscene.Handles(EndingId.H),
+                  "v0.79 ①:A(获救)/ B(活满五十天)/ H(幽灵船)都必须走船靠岸过场");
+            Check(!ShipEndingCutscene.Handles(EndingId.T) &&
+                  !ShipEndingCutscene.Handles(EndingId.C) && !ShipEndingCutscene.Handles(EndingId.F) &&
+                  !ShipEndingCutscene.Handles(EndingId.I),
+                  "v0.79 ①:只有 A/B/H 走船过场,其他结局不该被这条吞掉");
+            Check(ShipEndingCutscene.NpcCountA > 0 &&
+                  ShipEndingCutscene.NpcCountFor(EndingId.A) == ShipEndingCutscene.NpcCountA &&
+                  ShipEndingCutscene.NpcCountFor(EndingId.B) == ShipEndingCutscene.NpcCountA,
+                  "v0.79 ①:邮轮甲板上必须有人(A 与 B 同一套)");
+            Eq(ShipEndingCutscene.NpcCountFor(EndingId.H), 0,
+               "v0.79 ①:幽灵船必须空无一人(用户:「幽灵船空无一人」)");
+
+            // ② 三份运行时模型在盘上:缺了会静默退回灰盒,用户就看不到"邮轮 / NPC"。
+            Check(World.HasModel("cruiseship"), "v0.79 ②:Resources/Models/cruiseship.fbx 不在");
+            Check(World.HasModel("npc_man") && World.HasModel("npc_woman"),
+                  "v0.79 ②:甲板 NPC 的两份模型不在(缺了会退回胶囊)");
+
+            // ③ 时间轴与地理:先靠岸、再飞镜头;泊位在浪线外,船从 30 米外沿岸线开来。
+            Check(ShipEndingCutscene.DockAt > 0f &&
+                  ShipEndingCutscene.CamFrom > ShipEndingCutscene.DockAt &&
+                  ShipEndingCutscene.CamAt > ShipEndingCutscene.CamFrom &&
+                  ShipEndingCutscene.FadeFrom > ShipEndingCutscene.CamAt &&
+                  ShipEndingCutscene.Duration > ShipEndingCutscene.FadeFrom,
+                  "v0.79 ③:时间轴必须 靠岸 < 镜头出发 < 镜头到位 < 压黑 < 结束(否则船还没停镜头就到了)");
+            var dock = ShipEndingCutscene.DockPos();
+            var start = ShipEndingCutscene.StartPos();
+            Check(IslandTerrain.Radius(dock.x, dock.z) > IslandTerrain.WaterR,
+                  "v0.79 ③:泊位落在浪线以内了(船会压到沙滩上)");
+            Check(Mathf.Abs(dock.y - IslandTerrain.SeaY) < 0.001f,
+                  "v0.79 ③:泊位高度必须取海面 SeaY,实际 " + dock.y);
+            Check(Vector3.Distance(dock, start) >= 20f,
+                  "v0.79 ③:船起步太近了,看不到「靠岸」这个过程");
+            Vector3 outward, tangent;
+            ShipEndingCutscene.DockAxes(out outward, out tangent);
+            Check(Mathf.Abs(Vector3.Dot(outward, tangent)) < 0.001f &&
+                  Mathf.Abs(tangent.y) < 0.001f && Mathf.Abs(tangent.magnitude - 1f) < 0.001f,
+                  "v0.79 ③:岸线切线必须是水平单位向量,且与径向垂直");
+            // 长边落在 z 上 ⇒ 转到切线再 +180°;落在 x 上 ⇒ 再多 90°。
+            // ⚠ v0.83 起航向是 −切线(船从切线正向开来),v0.79 那条"±90° / 0°"的旧期望已作废。
+            float tangentYaw = Mathf.Atan2(tangent.x, tangent.z) * Mathf.Rad2Deg;
+            Check(Mathf.Abs(Mathf.DeltaAngle(ShipEndingCutscene.ShipYaw(true), tangentYaw + 180f)) < 0.01f &&
+                  Mathf.Abs(Mathf.DeltaAngle(ShipEndingCutscene.ShipYaw(false), tangentYaw + 270f)) < 0.01f,
+                  "v0.79 ③:船体长边没有转到岸线切线方向(会变成船头朝岸 / 横着漂)");
+            // 镜头终点在船的岛侧、甲板上方;看向甲板。
+            var camEnd = ShipEndingCutscene.CameraEnd(3f, 3f);
+            var camLook = ShipEndingCutscene.CameraLook(3f);
+            Check(camEnd.y > 5f && camEnd.z > dock.z + 3f,
+                  "v0.79 ③:镜头终点不在甲板上方 / 船的岛侧,实际 " + camEnd);
+            Check(camLook.y < camEnd.y && Mathf.Abs(camLook.z - dock.z) < 0.01f,
+                  "v0.79 ③:镜头终点没有看向甲板");
+
+            // ④ 接线:OnSleep 分流 A/H、结算只在回调、相机两处闸都让位。
+            string ip = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/IslandPhase.cs");
+            Check(ip.IndexOf("if (ShipEndingCutscene.Handles(pending)) { BeginShipEnding(pending); return; }",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("BeginShipEnding(pending); return;", System.StringComparison.Ordinal) >= 0,
+                  "v0.79 ④:OnSleep 没有把 A/B/H 分流到过场(会当场换屏,过场没地方演)");
+            // v0.90:B 也走同一镜。
+            Check(ip.IndexOf("if (S.day > B.survivalDaysToEndB) { BeginShipEnding(EndingId.B); return; }",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.79 ④:活满五十天的 B 没有走邮轮过场(用户:「五十天使用轮船获救结局」)");
+            Check(ip.IndexOf("void BeginShipEnding(EndingId id)", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("ShipEndingCutscene.Play(root, transform, id, () => root.EndRun(id));",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.79 ④:BeginShipEnding 必须把 EndRun 推迟到过场回调");
+            Check(ip.IndexOf("root.EndRun(pending); return;", System.StringComparison.Ordinal) >= 0,
+                  "v0.79 ④:非 A/H 的结局仍要当场换屏,别被这条分流吞掉");
+            Check(ip.IndexOf("walk.forbidFreeLook = () => night || gullEnding || shipEnding || heliEnding",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.79 ④:船过场期间自由视角必须禁掉");
+            string gr = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/GameRoot.cs");
+            Eq(Count(gr, "ShipEndingCutscene.Active"), 2,
+               "v0.79 ④:ApplyIslandView / KeepIslandView 两处都必须认 ShipEndingCutscene.Active");
+            string sc = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/ShipEndingCutscene.cs");
+            Eq(Count(sc, "EndRun"), 0,
+               "v0.79 ④:结算只能由调用方的回调做,过场自己不许写 EndRun");
+            Check(sc.IndexOf("public static bool Active", System.StringComparison.Ordinal) >= 0 &&
+                  sc.IndexOf("void OnDestroy() { Active = false; }", System.StringComparison.Ordinal) >= 0,
+                  "v0.79 ④:Active 闸必须在过场销毁时交还(否则下一局镜头永远回不到 CameraPose)");
+            Check(sc.IndexOf("int n = NpcCountFor(id);", System.StringComparison.Ordinal) >= 0 &&
+                  sc.IndexOf("World.PlaceModel(transform, male ? \"npc_man\" : \"npc_woman\"",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.79 ④:A 的 NPC 必须真摆出来(H 走同一个循环但 n = 0)");
+
+            Debug.Log("[自检] v0.79:邮轮 / 幽灵船共用一镜 —— 船从 " + ShipEndingCutscene.Approach +
+                      " 米外沿岸线开到浪线外 " + ShipEndingCutscene.DockOffshore + " 米的泊位," +
+                      "镜头先停在固定机位、靠岸后飞向甲板上方;A/B 的甲板上有 " + ShipEndingCutscene.NpcCountA +
+                      " 个人,H 空无一人。结算在过场回调里发生一次。");
+        }
+
+        static void V080()
+        {
+            // ① 船员 / 甲板灯:摆的时候船还停在 `shipStart`,局部坐标必须按 **泊位位姿** 换算。
+            string sc = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/ShipEndingCutscene.cs");
+            Check(sc.IndexOf("public static Vector3 DockLocal(Vector3 world, Quaternion shipRot)",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ①:缺少 DockLocal —— 局部坐标只能按泊位位姿算");
+            Check(sc.IndexOf("var local = DockLocal(npc.transform.position, dockRot);",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ①:船员没有按泊位位姿换算局部坐标(会整体偏到船外 30 米)");
+            Check(sc.IndexOf("DockLocal(new Vector3(shipDock.x, deckY + 5.5f, shipDock.z), dockRot)",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ①:甲板灯没有按泊位位姿换算局部坐标(灯会跟船员一起飘到船外)");
+            Check(sc.IndexOf("ship.InverseTransformPoint", System.StringComparison.Ordinal) < 0,
+                  "v0.80 ①:又退回 InverseTransformPoint 了 —— 那一刻船还在起点,局部坐标会多算一整段航程");
+            // 往返一次:世界位 → 局部 → 世界,必须回到原处(纯函数,不碰场景)。
+            var dock = ShipEndingCutscene.DockPos();
+            var rot = Quaternion.Euler(0f, ShipEndingCutscene.ShipYaw(true), 0f);
+            var world = dock + new Vector3(2.5f, 1.7f, -11f);
+            var back = rot * ShipEndingCutscene.DockLocal(world, rot) + dock;
+            Check((back - world).sqrMagnitude < 0.0001f,
+                  "v0.80 ①:DockLocal 往返后回不到原世界位 — 实际 " + back + ",期望 " + world);
+            Debug.Log("[自检] v0.80 ①:船员与甲板灯按泊位位姿换算局部坐标(起点距泊位 " +
+                      Vector3.Distance(ShipEndingCutscene.StartPos(), dock).ToString("0.0") + " 米)。");
+
+            // ② 搜寻飞机 的 A 归飞机线:结局仍是 A,但不播"邮轮靠岸"。
+            string np = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/NightPhase.cs");
+            Check(np.IndexOf("public static bool PendingByPlane", System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ②:NightResolver 没有记「这个 A 是飞机给的」");
+            Check(np.IndexOf("PendingByPlane = Pending == EndingId.A && cur != null && cur.key == \"searchplane\";",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ②:END:A 的落点必须按当前事件是 searchplane 来标");
+            Check(np.IndexOf("PendingByPlane = e == DB.SearchPlane;", System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ②:信号火堆免检那一支也要标出飞机线");
+            Eq(Count(np, "PendingByPlane = false;"), 2,
+               "v0.80 ②:PendingByPlane 必须在 Begin / End 各清一次(否则会拖到下一局)");
+            string ip = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/IslandPhase.cs");
+            Check(ip.IndexOf("if (pending == EndingId.A && NightResolver.PendingByPlane) { BeginHelicopterEnding(); return; }",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ②:OnSleep 没有把搜寻直升机的 A 挡在邮轮过场之外(v0.81 起交给直升机过场)");
+
+            // ③ 夜景云团:与天空板同一条不受光的路,否则夜里是一块黑剪影(用户读成"飘错位置的烟")。
+            string sky = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/IslandSky.cs");
+            Check(sky.IndexOf("World.UnlitMat(new Color(0.86f, 0.91f, 0.97f))",
+                              System.StringComparison.Ordinal) >= 0,
+                  "v0.80 ③:云又用回受光材质了 —— 夜里会变成一块黑椭圆");
+
+            Debug.Log("[自检] v0.80:船员/甲板灯按泊位位姿落位;搜寻飞机的获救不播邮轮过场;夜景云团改为不受光。");
+        }
+
+        static void V081()
+        {
+            // ① 落点 = 岛心(用户:「直接落到岛屿正中央(不用考虑下方的东西」)。
+            var c = IslandTerrain.Center;
+            var land = HelicopterEndingCutscene.LandingPos();
+            Check(Mathf.Abs(land.x - c.x) < 0.001f && Mathf.Abs(land.z - c.y) < 0.001f,
+                  "v0.81 ①:直升机没有落在岛心 — 实际 " + land);
+            Check(Mathf.Abs(land.y - IslandTerrain.GroundY(c.x, c.y)) < 0.001f,
+                  "v0.81 ①:落点高度没有取岛心的地表高度 — 实际 " + land.y);
+            var start = HelicopterEndingCutscene.StartPos();
+            var hover = HelicopterEndingCutscene.HoverPos();
+            Check(start.z < land.z - 20f && start.y > land.y + 4f,
+                  "v0.81 ①:直升机不是从岛外低空飞进来 — 起手 " + start);
+            Check(hover.y > land.y && hover.y < land.y + 5f,
+                  "v0.81 ①:悬停高度不合理(固定镜头俯 26°,太高会被画面上沿切掉) — " + hover.y);
+
+            // ② 镜头终点 = 机身 +z 侧面的舱门外:在旋翼半径之外、比舱门高、看向舱门。
+            var size = new Vector3(9f, 2.86f, 8.2f);       // helicopter.fbx 归一化后的实测比例
+            Vector3 camPos, look;
+            HelicopterEndingCutscene.DoorView(land, size, out camPos, out look);
+            Check(camPos.z > land.z + size.z * 0.5f,
+                  "v0.81 ②:舱门镜头落在旋翼半径之内(会插进旋翼)— 实际 " + camPos);
+            Check(camPos.y > look.y && Mathf.Abs(camPos.x - land.x) < 0.001f,
+                  "v0.81 ②:镜头不是从 +z 侧上方看向舱门 — 实际 " + camPos);
+            Check(look.z > land.z && look.z < land.z + size.z * 0.5f,
+                  "v0.81 ②:舱门取到了机身之外 — 实际 " + look.z);
+
+            // ③ 时间轴:悬停 < 下降 < 落地 < 镜头到位 < 压黑 < 结束。
+            //   ⚠ 镜头 **不是** 落地后才出发:设计稿是「5.6~9.8s 镜头飞向舱门」——
+            //     出发时还在下降(6.0~8.4),落地后才停稳(9.8 > 8.4)。
+            //     v0.81 第一次真跑时这条断言写成 `CamFrom > LandAt`,红的是断言自己(§11-115 同一族)。
+            Check(HelicopterEndingCutscene.HoverAt > 0f &&
+                  HelicopterEndingCutscene.DescendFrom > HelicopterEndingCutscene.HoverAt &&
+                  HelicopterEndingCutscene.LandAt > HelicopterEndingCutscene.DescendFrom &&
+                  HelicopterEndingCutscene.CamFrom >= HelicopterEndingCutscene.HoverAt &&
+                  HelicopterEndingCutscene.CamFrom < HelicopterEndingCutscene.LandAt &&
+                  HelicopterEndingCutscene.CamAt > HelicopterEndingCutscene.LandAt &&
+                  HelicopterEndingCutscene.CamAt > HelicopterEndingCutscene.CamFrom &&
+                  HelicopterEndingCutscene.FadeFrom > HelicopterEndingCutscene.CamAt &&
+                  HelicopterEndingCutscene.Duration > HelicopterEndingCutscene.FadeFrom,
+                  "v0.81 ③:时间轴顺序不对(镜头在悬停前就出发 / 落地前就到舱门 / 没停稳就压黑)");
+
+            // ④ 接线:OnSleep 分流、结算推迟、远处那一架退场、自由视角与两处相机闸都让位。
+            string ip = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/IslandPhase.cs");
+            Check(ip.IndexOf("if (pending == EndingId.A && NightResolver.PendingByPlane) { BeginHelicopterEnding(); return; }",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.81 ④:OnSleep 没有把直升机线的 A 分流到过场(会当场换屏)");
+            Check(ip.IndexOf("HelicopterEndingCutscene.Play(root, transform, () => root.EndRun(EndingId.A));",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.81 ④:直升机过场的 EndRun(A) 没有推迟到 onDone");
+            Check(ip.IndexOf("props[i].name == \"DistantHelicopter\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.81 ④:那一晚掠过的那一架没有退场(会与降落的直升机同屏变成两架)");
+            Check(ip.IndexOf("|| heliEnding", System.StringComparison.Ordinal) >= 0,
+                  "v0.81 ④:直升机过场期间自由视角没禁掉");
+            string gr = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/GameRoot.cs");
+            Eq(Count(gr, "HelicopterEndingCutscene.Active"), 2,
+               "v0.81 ④:ApplyIslandView / KeepIslandView 两处都必须认 HelicopterEndingCutscene.Active");
+            string hc = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/HelicopterEndingCutscene.cs");
+            Eq(Count(hc, "EndRun"), 0,
+               "v0.81 ④:结算只能由调用方的回调做,过场自己不许写 EndRun");
+            Check(hc.IndexOf("void OnDestroy() { Active = false; }", System.StringComparison.Ordinal) >= 0,
+                  "v0.81 ④:Active 闸必须在过场销毁时交还(否则下一局镜头永远回不到 CameraPose)");
+            Check(World.HasModel("helicopter"), "v0.81 ④:Resources/Models/helicopter.fbx 不在(会退回灰盒)");
+
+            // ⑤ 文案全链路:搜寻飞机 → 搜寻直升机。这里只钉"玩家看得见"的三处:
+            //   事件资产(夜里那句 + 日记抬头)、日记表、夜晚那层。
+            //   ⚠ "从飞机上活着下来" / 合影里那架 指的是 **坠毁的那架飞机**,不在改名范围。
+            string ev = System.IO.File.ReadAllText(UnityEngine.Application.dataPath + "/Data/Events/searchplane.asset");
+            Check(ev.IndexOf("\\u76F4\\u5347\\u673A", System.StringComparison.Ordinal) >= 0 &&
+                  ev.IndexOf("\\u98DE\\u673A", System.StringComparison.Ordinal) < 0,
+                  "v0.81 ⑤:searchplane.asset 还是「搜寻飞机」(菜单① 才会把资产刷成新文案)");
+            string dl = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/DiaryLines.cs");
+            int a = dl.IndexOf("\"searchplane:flare\"", System.StringComparison.Ordinal);
+            int b = dl.IndexOf("\"ship:sail\"", System.StringComparison.Ordinal);
+            Check(a >= 0 && b > a && dl.Substring(a, b - a).IndexOf("飞机", System.StringComparison.Ordinal) < 0,
+                  "v0.81 ⑤:日记里 searchplane 那几行还写着「飞机」");
+            string np = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/NightPhase.cs");
+            Check(np.IndexOf("飞机", System.StringComparison.Ordinal) < 0,
+                  "v0.81 ⑤:夜晚那层还有玩家能读到的「飞机」→ 应是「直升机」");
+            string bd = StripComments(UnityEngine.Application.dataPath + "/Scripts/Editor/DemoAssetBaker.cs");
+            Check(bd.IndexOf("Ev(\"searchplane\", \"搜寻直升机\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.81 ⑤:烘焙器的 searchplane 事件名没有改成「搜寻直升机」(重跑① 会写回旧名)");
+
+            Debug.Log("[自检] v0.81:直升机从岛外 " + HelicopterEndingCutscene.StartBack + " 米低空飞进岛心、" +
+                      "悬停在离地 " + HelicopterEndingCutscene.HoverHeight + " 米,落地前后镜头移向 +z 侧舱门(落地后停稳);" +
+                      "远处那一架已换成同一个模型;文案全链路改为「直升机」。");
+        }
+
+        static void V082()
+        {
+            // ① 远处那一架的红灯。v0.82 的整机 AABB 仍然错:整机 min.x 是 **主旋翼翼尖**
+            //   (FBX `Propeller_2` x[-1825.9, 2345.5]),不是尾梁。v0.83 改成量 `Tail_part` 自己的盒子
+            //   (x[2673.9, 2969.0] / y[482.0, 539.0]),灯贴尾端 6%、高度取这段的中线。
+            var mn = new Vector3(-1.75f, 0.50f, -0.07f);   // 尾梁自己的盒子(2.4 米归一后的量级)
+            var mx = new Vector3(-1.55f, 0.58f, 0.07f);
+            var p = IslandPhase.DistantNavLight(mn, mx);
+            Check(p.x > mn.x && p.x < mn.x + (mx.x - mn.x) * 0.15f,
+                  "v0.82 ①:航行灯没落在尾梁最后端 — 实际 " + p);
+            Check(Mathf.Abs(p.y - (mn.y + mx.y) * 0.5f) < 0.001f,
+                  "v0.82 ①:航行灯不在尾梁中线(会又悬在梁下方 / 飞到上面)— 实际 " + p);
+            Check(Mathf.Abs(p.z - (mn.z + mx.z) * 0.5f) < 0.001f,
+                  "v0.82 ①:航行灯没有沿机身中线 — 实际 " + p);
+            string ip = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/IslandPhase.cs");
+            Check(ip.IndexOf("TailBounds(model, out mn, out mx)", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("body.transform.InverseTransformPoint(DistantNavLight(mn, mx))",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ①:灯位没有只量尾梁(又退回整机包围盒 / 写死坐标)");
+            Check(ip.IndexOf("World.WorldAABB(model, out mn, out mx)", System.StringComparison.Ordinal) < 0,
+                  "v0.83 ①:远处那架又用整机 AABB 推灯位 —— 尾端其实是主旋翼翼尖");
+            Check(ip.IndexOf("new Vector3(-1.05f, 0.55f, 0f)", System.StringComparison.Ordinal) < 0,
+                  "v0.82 ①:旧的那个悬空灯位又回来了");
+            Check(ip.IndexOf("new Vector3(-0.62f, 0.1f, 0f)", System.StringComparison.Ordinal) >= 0,
+                  "v0.82 ①:灰盒兜底的机尾还在 +x 侧(真模型的尾梁在 −x 端)");
+
+            // ② 飞机线恢复两轮:第一轮只把 planeStage 推到 1,**不掷 50%**;第二轮才判定。
+            //   v0.43 的"手电筒不分轮次都是 50%"被这条覆盖(用户最新口径:两轮)。
+            string np = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/NightPhase.cs");
+            int s0 = np.IndexOf("case \"searchplane\":", System.StringComparison.Ordinal);
+            int s1 = np.IndexOf("case \"ship\":", s0, System.StringComparison.Ordinal);
+            Check(s0 >= 0 && s1 > s0, "v0.82 ②:找不到 searchplane 分支");
+            if (s0 >= 0 && s1 > s0)
+            {
+                string plane = np.Substring(s0, s1 - s0);
+                int f0 = plane.IndexOf("if (c.key == \"flashlight\")", System.StringComparison.Ordinal);
+                int f1 = plane.IndexOf("if (c.key == \"firepile\")", f0, System.StringComparison.Ordinal);
+                Check(f0 >= 0 && f1 > f0, "v0.82 ②:找不到 searchplane/flashlight 那一段");
+                if (f0 >= 0 && f1 > f0)
+                {
+                    string fl = plane.Substring(f0, f1 - f0);
+                    Check(fl.IndexOf("bool lit = second && Roll(0.5f);", System.StringComparison.Ordinal) >= 0,
+                          "v0.82 ②:手电筒又变成不分轮次都判定了(用户要的是两轮)");
+                    int guard = fl.IndexOf("if (!second)", System.StringComparison.Ordinal);
+                    int stage = guard >= 0 ? fl.IndexOf("S.rescue.planeStage = 1;", guard, System.StringComparison.Ordinal) : -1;
+                    int endA = guard >= 0 ? fl.IndexOf("return \"END:A\";", guard, System.StringComparison.Ordinal) : -1;
+                    Check(guard >= 0 && stage > guard && endA > stage,
+                          "v0.82 ②:第一轮必须只记下(planeStage=1)、不许 END:A(现在一轮就能获救)");
+                    Check(fl.IndexOf("planeStage = 2", System.StringComparison.Ordinal) < 0,
+                          "v0.82 ②:手电筒落空不许把这条线关掉(直升机还会再来)");
+                    Check(fl.IndexOf("Diary(!second ? \"flashfirst\"", System.StringComparison.Ordinal) >= 0,
+                          "v0.82 ②:第一照的日记不能复用「灯空了」(那时可能还剩一格电)");
+                }
+                string dl = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/DiaryLines.cs");
+                Check(dl.IndexOf("\"searchplane:flashfirst\"", System.StringComparison.Ordinal) >= 0,
+                      "v0.82 ②:日记表缺 searchplane:flashfirst(第一照会静默不写)");
+                Eq(Count(plane, "S.rescue.planeStage = 1;"), 3,
+                   "v0.82 ②:信号弹 / 火堆 / 手电筒三条第一轮都应把 planeStage 推到 1");
+            }
+
+            // ③ 获救文案适配直升机过场:A 由轮船 / 直升机共用,第一句不能点名"船"。
+            var ea = DB.endings[EndingId.A];
+            Check(ea != null && ea.epilogueLines.Count > 0 &&
+                  ea.epilogueLines[0].IndexOf("你离开了那座岛", System.StringComparison.Ordinal) >= 0,
+                  "v0.82 ③:A 的尾声第一句还是「船靠了岸」(直升机线读起来对不上)");
+            Check(ea != null && ea.epilogueIfTrueClaimed.Count > 0 &&
+                  ea.epilogueIfTrueClaimed[0].IndexOf("你离开了那座岛", System.StringComparison.Ordinal) >= 0,
+                  "v0.82 ③:A 的「打过T」版第一句也要跟着改");
+            string bd = StripComments(UnityEngine.Application.dataPath + "/Scripts/Editor/DemoAssetBaker.cs");
+            Eq(Count(bd, "\"你离开了那座岛。有人给你披上毯子,问你叫什么名字。\""), 2,
+               "v0.82 ③:烘焙器的 A 表没跟着改(重跑① 会写回「船靠了岸」)");
+            // `LoadAssetAtPath` 只认 "Assets/..." 相对路径;拼 `Application.dataPath` 会静默回 null,
+            //   于是这条会误报成"资产还是旧文案"(盘上其实已经改了)。
+            var hint = AssetDatabase.LoadAssetAtPath<GameChoiceSO>(
+                DemoAssetBaker.DataRoot + "/Events/Choices/searchplane_flashlight.asset");
+            Check(hint != null &&
+                  hint.resultHint.IndexOf("第二次照才把人换回来", System.StringComparison.Ordinal) >= 0,
+                  "v0.82 ③:手电筒按钮那句还写着「照得着就把人换回来」(第一轮已经不成立)");
+
+            Debug.Log("[自检] v0.82:远处航灯贴回机尾中上部;飞机线手电筒恢复两轮(第一轮只记下);" +
+                      "A 的尾声改成不点名交通工具的「你离开了那座岛」。");
+        }
+
+        static void V083()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string ip = StripComments(data + "/Scripts/Phases/IslandPhase.cs");
+
+            // ① 螺旋桨:远景与结局过场都要转;RotorSpin 认的是 FBX 里那两个节点名。
+            Check(ip.IndexOf("AddComponent<RotorSpin>()", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ①:远处那架没有挂 RotorSpin");
+            string hc = StripComments(data + "/Scripts/Core/HelicopterEndingCutscene.cs");
+            Check(hc.IndexOf("AddComponent<RotorSpin>()", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ①:直升机结局过场没有挂 RotorSpin");
+            string rs = System.IO.File.ReadAllText(data + "/Scripts/Core/RotorSpin.cs");
+            Check(rs.IndexOf("\"Propeller_2\"", System.StringComparison.Ordinal) >= 0 &&
+                  rs.IndexOf("\"Propeller\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ①:RotorSpin 找不到主旋翼 / 尾桨节点名(FBX 实测是 Propeller_2 / Propeller)");
+
+            // ② 邮轮朝向:航向是 −切线(从 StartPos 开向泊位),所以 yaw 必须比切线多 180°。
+            Vector3 outward, tangent;
+            ShipEndingCutscene.DockAxes(out outward, out tangent);
+            float tangentYaw = Mathf.Atan2(tangent.x, tangent.z) * Mathf.Rad2Deg;
+            Check(Mathf.Abs(Mathf.DeltaAngle(ShipEndingCutscene.ShipYaw(true), tangentYaw + 180f)) < 0.01f,
+                  "v0.83 ②:邮轮长边沿 z 时没有转 180°(仍是倒着开向岸边)");
+            Check(Mathf.Abs(Mathf.DeltaAngle(ShipEndingCutscene.ShipYaw(false), tangentYaw + 270f)) < 0.01f,
+                  "v0.83 ②:邮轮长边沿 x 时也没有转 180°");
+
+            // ③ 火粒子:世界尺度 1 的子物体 + 明确的米制尺寸;灯也从 AABB 底面中心起算。
+            string ui = StripComments(data + "/Scripts/Core/UiKit.cs");
+            Check(ui.IndexOf("1f / hs.x", System.StringComparison.Ordinal) >= 0 &&
+                  ui.IndexOf("new ParticleSystem.MinMaxCurve(0.16f, 0.28f)", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ③:粒子又直接挂在宿主根上(会被 PlaceModel 的 ~200 倍 localScale 放大)");
+            Check(ui.IndexOf("go.transform.position = anchor + offset;", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ③:点光又用宿主局部坐标(0.55 会被放大到几十米高)");
+            Check(ui.IndexOf("public static bool MeshBounds", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("World.MeshBounds", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ③:找不到单件包围盒入口(尾梁 / 粒子锚点都要它)");
+
+            // ④ 低温夜 / 影怪:火点着 ⇒ 摊开即解决;真结局 T 的"推箱子"必须留下。
+            string np = StripComments(data + "/Scripts/Phases/NightPhase.cs");
+            Check(np.IndexOf("e.key == \"coldnight\" && S.fireLitTonight", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ④:低温夜没有读「火还烧着」");
+            Check(np.IndexOf("e.key == \"shadow\" && S.fireLitTonight", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ④:影怪没有读「火还烧着」");
+            Check(np.IndexOf("AutoKeepsOffer", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ④:影怪少了「仍把推箱子留给玩家」这一支(真结局 T 会被火吞掉)");
+            int sleepAt = np.IndexOf("public static string Sleep()", System.StringComparison.Ordinal);
+            int autoAt = sleepAt >= 0 ? np.IndexOf("if (AutoResolved)", sleepAt, System.StringComparison.Ordinal) : -1;
+            int listAt = sleepAt >= 0 ? np.IndexOf("var list = AvailableChoices(cur);", sleepAt, System.StringComparison.Ordinal) : -1;
+            Check(autoAt > sleepAt && listAt > autoAt,
+                  "v0.83 ④:Sleep() 又先去挑选项了(火已解决的那晚不能结算「什么都不做」)");
+            Check(ip.IndexOf("NightResolver.AutoResolved && !NightResolver.AutoKeepsOffer", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ④:夜晚屏没有把自动解决的那一晚收口");
+            string dl = StripComments(data + "/Scripts/Core/DiaryLines.cs");
+            Check(dl.IndexOf("\"coldnight:litfire\"", System.StringComparison.Ordinal) >= 0 &&
+                  dl.IndexOf("\"shadow:litfire\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ④:日记表缺 litfire 那两句(会静默不写)");
+
+            // ⑤ 迷宫:200 个种子都必须有 ≥2 条最短路径到出口(用户:"不应该只有唯一一条路")。
+            int onlyOne = 0, tooLong = 0; string firstOnly = "";
+            for (int seed = 0; seed < 200; seed++)
+            {
+                Vector2Int p, e, s;
+                var open = SnakeMaze.Generate(seed, out p, out e, out s);
+                if (open == null) { onlyOne++; continue; }
+                if (SnakeMaze.ShortestPathCount(open, p, e) < 2)
+                {
+                    onlyOne++;
+                    if (firstOnly.Length == 0) firstOnly = "首个种子 " + seed;
+                }
+                var path = SnakeMaze.Path(open, p, e);
+                if (path == null || path.Count - 1 > 24) tooLong++;
+            }
+            Check(onlyOne == 0, "v0.83 ⑤:" + onlyOne + "/200 张迷宫到出口只有一条最短路径(" + firstOnly + ")");
+            Check(tooLong == 0, "v0.83 ⑤:" + tooLong + "/200 张迷宫在 30 秒内走不完(开墙不能把路线拉长)");
+
+            // ⑥ 海鸥结局:人类骸骨模型 + 镜头先靠近。
+            Check(System.IO.File.Exists(data + "/Resources/Models/skeleton.fbx"),
+                  "v0.83 ⑥:Resources/Models/skeleton.fbx 不在(人类骸骨没进工程)");
+            Check(ui.IndexOf("\"skeleton\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ⑥:ByHeight 没登记 skeleton ⇒ 会按张开的手臂(最长边)归一,人会被压矮");
+            string wl = StripComments(data + "/Scripts/Core/Wildlife.cs");
+            Check(wl.IndexOf("World.PlaceModel(transform, \"skeleton\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ⑥:海鸥结局还在摆 bones.fbx(那是一堆骨头,不是人)");
+            Check(GullEndingCutscene.CameraAt < GullEndingCutscene.ArriveAt,
+                  "v0.83 ⑥:镜头到位不应晚于海鸥落定(用户要「先靠近骸骨,再抓走」)");
+            Check(wl.IndexOf("cam.transform.position = Vector3.Lerp(camStart, camGoal, k)", System.StringComparison.Ordinal) >= 0 &&
+                  wl.IndexOf("public static bool Active", System.StringComparison.Ordinal) >= 0,
+                  "v0.83 ⑥ / v0.86 ⑤:海鸥过场没有接管镜头 / 没有 Active 闸");
+            string gr = StripComments(data + "/Scripts/Core/GameRoot.cs");
+            Eq(Count(gr, "GullEndingCutscene.Active"), 2,
+               "v0.83 ⑥:GameRoot 的两处每帧校正都要给海鸥过场让位");
+
+            Debug.Log("[自检] v0.83:航行灯改量尾梁;直升机双旋翼转;邮轮 yaw +180°;火粒子按世界米、点光贴 AABB;" +
+                      "火点着时低温夜/影怪自动解决(保留 T);200 张迷宫都有 ≥2 条最短路径;海鸥结局换成人类骸骨且镜头先靠近。");
+        }
+
+        static void V084()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string ip = StripComments(data + "/Scripts/Phases/IslandPhase.cs");
+            string np = StripComments(data + "/Scripts/Phases/NightPhase.cs");
+            string dl = StripComments(data + "/Scripts/Core/DiaryLines.cs");
+            string ui = StripComments(data + "/Scripts/Core/UiKit.cs");
+
+            // ① 宁静的夜:标题 + 一个看得见的免费聊天按钮,判据沿用 `CalmTalkOffered`。
+            Check(ip.IndexOf("宁静的夜", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ①:宁静的夜没有换掉「今夜无事发生」");
+            Check(ip.IndexOf("和队友说说话(免体力)", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ①:宁静的夜没有聊天按钮");
+            Check(ip.IndexOf("NightResolver.CalmTalkOffered", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ①:聊天按钮没有沿用 `CalmTalkOffered`(会多出一条判据)");
+
+            // ② 诡异的月光:事件名 / 描述 / 日记三处都要跟着改,那一晚还要有月亮。
+            Eq(DB.WeaponA.displayName, "诡异的月光", "v0.84 ②:盘上事件名还是旧的(先跑菜单① 迁移)");
+            Check((DB.WeaponA.description ?? "").IndexOf("武器a", System.StringComparison.Ordinal) < 0,
+                  "v0.84 ②:事件描述里还写着「武器a」");
+            Check(dl.IndexOf("武器a", System.StringComparison.Ordinal) < 0,
+                  "v0.84 ②:日记里还写着「武器a」");
+            Check(ip.IndexOf("NightResolver.Current == DB.WeaponA", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("MoonFx", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ②:weapona 那一晚没有摆月亮");
+            Check(ui.IndexOf("public static Material GlowMat()", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ②:月亮眩光材质入口不见了");
+
+            // ③ 营地边的人影:不剧透的名字 / 描述 / 按钮。
+            Eq(DB.FakeMate.displayName, "营地边的人影", "v0.84 ③:盘上事件名还是「假队友」(先跑菜单① 迁移)");
+            var fm = Ch(DB.FakeMate, "flashlight");
+            Check(fm != null && fm.label == "用手电筒照过去",
+                  "v0.84 ③:手电筒按钮还是「用手电筒照他」");
+            string fmd = DB.FakeMate.description ?? "";
+            Check(fmd.IndexOf("v0.45", System.StringComparison.Ordinal) < 0 &&
+                  fmd.IndexOf("假", System.StringComparison.Ordinal) < 0,
+                  "v0.84 ③:事件描述还在剧透 / 带内部注记");
+
+            // ④ 守夜:不再绑队友;没有队友时不生成。
+            int bt = np.IndexOf("static string BoundTarget", System.StringComparison.Ordinal);
+            int ac = bt >= 0 ? np.IndexOf("static List<GameChoiceSO> AvailableChoices", bt, System.StringComparison.Ordinal) : -1;
+            Check(bt >= 0 && ac > bt &&
+                  np.Substring(bt, ac - bt).IndexOf("watch", System.StringComparison.Ordinal) < 0,
+                  "v0.84 ④:守夜还绑在队友身上(点队友会被单条自动执行,屏幕上看不到按钮)");
+            Check(np.IndexOf("c.key == \"watch\" && !S.mate.present", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ④:守夜成了常驻按钮,却没有「必须有队友」这道闸");
+
+            // ⑤ 影怪:躲被子 → 迷宫 + 毯子门槛;旧概率账必须消失。
+            var hide = Ch(DB.Shadow, "hide");
+            Check(hide != null && hide.label == "裹着毯子逃",
+                  "v0.84 ⑤:影怪那条按钮还是旧的「躲进被子里屏息」");
+            Check(hide != null && (hide.resultHint ?? "").IndexOf("毯子", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ⑤:影怪按钮的括号没有说明「要有毯子」");
+            Check(np.IndexOf("c.key == \"hide\" && !S.storage.Has(DB.Blanket, 1)", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ⑤:影怪的躲藏没有毯子门槛");
+            Check(np.IndexOf("Shadow(c, log, mazeEscaped)", System.StringComparison.Ordinal) >= 0 &&
+                  np.IndexOf("0.7f : 0.5f", System.StringComparison.Ordinal) < 0,
+                  "v0.84 ⑤:影怪还在走旧的 50%/70% 掷骰,没有接迷宫结果");
+            Check(ip.IndexOf("shadowMaze", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("SnakeMazeView.ShadowTitle", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ⑤:影怪的躲藏没有开迷宫");
+
+            // ⑥ 钓竿:上帝视角 1.6 倍,第一人称 1.0(用户:"第一人称保持现状")。
+            Check(System.IO.File.Exists(data + "/Scripts/Core/RodViewScale.cs"),
+                  "v0.84 ⑥:RodViewScale.cs 不在");
+            string rs = System.IO.File.Exists(data + "/Scripts/Core/RodViewScale.cs")
+                ? System.IO.File.ReadAllText(data + "/Scripts/Core/RodViewScale.cs") : "";
+            Check(rs.IndexOf("GodMul = 1.6f", System.StringComparison.Ordinal) >= 0 &&
+                  rs.IndexOf("IslandWalk.Active", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ⑥:钓竿没有按视角切换尺寸");
+            Check(ip.IndexOf("AddComponent<RodViewScale>()", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("if (k == DB.FishingRod)", System.StringComparison.Ordinal) >= 0,
+                  "v0.84 ⑥:钓竿没有被挂上 RodViewScale");
+
+            Debug.Log("[自检] v0.84:宁静的夜 + 聊天按钮;武器a → 诡异的月光(当晚摆圆月);" +
+                      "假队友 → 营地边的人影(不再剧透);守夜成为看得见的按钮;影怪躲藏改迷宫且需要毯子;" +
+                      "上帝视角钓竿 1.6 倍、第一人称保持原样。");
+        }
+
+        static void V085()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string ip = StripComments(data + "/Scripts/Phases/IslandPhase.cs");
+            string sc = StripComments(data + "/Scripts/Core/ShipEndingCutscene.cs");
+
+            // ① 手电筒的点光只在夜里:白天亮 = 用户报的那团"异常发光"。
+            Check(ip.IndexOf("if (night && k == DB.Flashlight && S.flashlightCharge > 0)",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.85 ①:手电筒的点光又回到白天也亮了");
+            Check(ip.IndexOf("World.PointLight(go, Vector3.up * (ItemVisual * 0.45f)",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.85 ①:手电筒那盏灯被整条删掉了(用户要的是只在夜里亮,不是没有)");
+
+            // ② 幽灵船:只有 H 换材质;透明模式四件套与"拿不到 shader 就纯黑"都要在。
+            Check(sc.IndexOf("if (id == EndingId.H) GhostLook(ship.gameObject);",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.85 ②:幽灵船没有换成荧光绿 / 纯黑(A 也会跟着变)");
+            Check(sc.IndexOf("m.SetFloat(\"_Mode\", 3f)", System.StringComparison.Ordinal) >= 0 &&
+                  sc.IndexOf("m.SetInt(\"_SrcBlend\"", System.StringComparison.Ordinal) >= 0 &&
+                  sc.IndexOf("m.EnableKeyword(\"_ALPHABLEND_ON\")", System.StringComparison.Ordinal) >= 0 &&
+                  sc.IndexOf("m.SetInt(\"_ZWrite\", 0)", System.StringComparison.Ordinal) >= 0,
+                  "v0.85 ②:幽灵船的透明模式没配全(船会是一块实心绿)");
+            Check(sc.IndexOf("World.Mat(Color.black)", System.StringComparison.Ordinal) >= 0,
+                  "v0.85 ②:透明 shader 拿不到时没有退回纯黑");
+
+            // 真造一次材质:颜色必须是半透明、且绿明显压过红(荧光绿)。
+            var gm = ShipEndingCutscene.GhostMat();
+            bool ghostOk = gm != null && gm.color.a > 0.2f && gm.color.a < 0.75f && gm.color.g > gm.color.r + 0.3f;
+            if (gm != null) UnityEngine.Object.DestroyImmediate(gm);
+            Check(ghostOk, "v0.85 ②:幽灵船材质不是半透明荧光绿");
+
+            Debug.Log("[自检] v0.85:手电筒的点光只在夜里亮(白天那团幻光是 v0.83 把灯锚回物品后露出来的);" +
+                      "幽灵船(H)整条船换成半透明荧光绿、甲板灯跟着变绿,A 不变;拿不到 Standard 时退回纯黑。");
+        }
+
+        // v0.86(用户五条:宁静夜聊天没回精神 / 医疗箱回满 / 迷宫提速 / 海鸥结局白格 / 镜头不追起飞)
+        static void V086()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string ip = StripComments(data + "/Scripts/Phases/IslandPhase.cs");
+            string wl = StripComments(data + "/Scripts/Core/Wildlife.cs");
+            string dbk = StripComments(data + "/Scripts/Editor/DemoAssetBaker.cs");
+
+            // ① 聊天保护只跳过"随机掉层",不动强制掉层;两条聊天入口都要置位,清晨结算后复位。
+            Check(ip.IndexOf("!talkedSinceDawn && S.rng.NextDouble() < B.teammateMoodDailyDropChance",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  Count(ip, "talkedSinceDawn = true;") == 2 &&
+                  Count(ip, "talkedSinceDawn = false;") == 1,
+                  "v0.86 ①:聊过之后的清晨仍会掷随机掉层(白天谈话 / 宁静夜谈话各要置位一次,结算后复位)");
+
+            // ② 医疗箱:治病 + 回满一起做;旧的"掷一次、二选一"调用必须消失。
+            Check(ip.IndexOf("void UseMedKit()", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("S.stats.sick = false;", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("S.stats.hp = B.hpMax;", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("ApplyMedicine(1f, \"医疗箱\")", System.StringComparison.Ordinal) < 0,
+                  "v0.86 ②:医疗箱没有同时治病 + 回满生命(或又走回了二选一结算)");
+            Check(dbk.IndexOf("SetItemDesc(\"medkit\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.86 ②:医疗箱的资产说明没有迁移(盘上会继续写着「回 1 生命」)");
+
+            // ③ 迷宫:玩家 3 格/秒、蛇 = 玩家 ×0.8 = 2.4;限时仍是 30 秒。
+            Check(SnakeMaze.PlayerSpeed == 3f &&
+                  Mathf.Abs(SnakeMaze.SnakeSpeed - SnakeMaze.PlayerSpeed * 0.8f) < 0.0001f &&
+                  Mathf.Abs(SnakeMaze.SnakeSpeed - 2.4f) < 0.0001f &&
+                  SnakeMaze.TimeLimit == 30f,
+                  "v0.86 ③:迷宫速度应为 玩家 3 / 蛇 2.4 格每秒,限时仍 30 秒");
+
+            // ④ v0.89:用户收回「沙滩只剩拖痕」——整条拖痕已删除,由 `V089()` 钉"不许回来"。
+            //   这里原来那条"拖痕必须走 UnlitMat"的钉子已无对象,同轮删掉(只删对象已消失的断言)。
+
+            // ⑤ 镜头:2 秒内挪到固定机位(位置 + 俯角),之后定死。v0.87 ④ 把终点改成 12 米 / 42°,
+            //   这里只钉"到位后不再跟 `pos`";构图由 `V087()` 投影一遍。
+            Check(wl.IndexOf("public static Vector3 CameraGoal", System.StringComparison.Ordinal) >= 0 &&
+                  wl.IndexOf("cam.transform.position = Vector3.Lerp(camStart, camGoal, k)",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  wl.IndexOf("cam.transform.rotation = Quaternion.Slerp(camStartRot, camEndRot, k);",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  wl.IndexOf("pos + camOffset", System.StringComparison.Ordinal) < 0,
+                  "v0.86 ⑤:海鸥结局镜头还会跟随骨架(用户要「只靠近,仍是俯视,不跟起飞」)");
+            Vector3 a, sky;
+            GullEndingCutscene.Route(out a, out sky);
+            var goal = GullEndingCutscene.CameraGoal(a);
+            Vector3 focus = GullEndingCutscene.CameraFocus(a);   // 与 `CameraGoal` 同一个焦点,别再抄一份常量
+            Vector3 toCam = goal - focus;
+            float pitchDown = Mathf.Asin(Mathf.Clamp01(-(focus - goal).normalized.y)) * Mathf.Rad2Deg;
+            Check(Mathf.Abs(toCam.magnitude - GullEndingCutscene.CamDistance) < 0.01f &&
+                  Mathf.Abs(pitchDown - GullEndingCutscene.CamPitch) < 0.5f &&
+                  GullEndingCutscene.CamDistance >= 10f,
+                  "v0.86 ⑤ / v0.87 ④:海鸥结局机位的距离/俯角不对(应退 " + GullEndingCutscene.CamDistance +
+                  " 米、俯角 " + GullEndingCutscene.CamPitch + "°)");
+            Check(goal.y > IslandTerrain.GroundY(goal.x, goal.z) + 5f,
+                  "v0.86 ⑤:海鸥结局机位埋进地面了(y=" + goal.y.ToString("F2") + ")");
+
+            Debug.Log("[自检] v0.86:聊天后的清晨不再随机掉层;医疗箱治病 + 回满;迷宫 3 / 2.4 格每秒(限时 30);" +
+                      "海鸥结局镜头靠近后固定俯视、不跟骨架起飞。");
+        }
+
+        static void V087()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string sh = StripComments(data + "/Scripts/Core/ShipEndingCutscene.cs");
+            string wl = StripComments(data + "/Scripts/Core/Wildlife.cs");
+            string np = StripComments(data + "/Scripts/Phases/NightPhase.cs");
+
+            // ① H 的船更深绿 + 甲板鬼火;A 不经过这两支。
+            Check(ShipEndingCutscene.GhostTint.r < 0.20f &&
+                  ShipEndingCutscene.GhostTint.b < 0.40f &&
+                  ShipEndingCutscene.GhostTint.g > ShipEndingCutscene.GhostTint.r * 2f &&
+                  ShipEndingCutscene.GhostTint.g > ShipEndingCutscene.GhostTint.b * 1.5f &&
+                  ShipEndingCutscene.GhostEmission.g < 0.60f,
+                  "v0.87 ①:幽灵船的绿色没有压深(应比原来的 (0.30,1,0.55) 更深、自发光也收一档)");
+            Check(ShipEndingCutscene.GhostFireCount >= 4 &&
+                  sh.IndexOf("if (id == EndingId.H) AddGhostFires(", System.StringComparison.Ordinal) >= 0 &&
+                  Count(sh, "AddGhostFires(") == 2 &&
+                  sh.IndexOf("World.PointLight(go, Vector3.up * 0.45f, flame, 1.15f, 5f, true);",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  sh.IndexOf("World.Sparks(go, flame, true);", System.StringComparison.Ordinal) >= 0,
+                  "v0.87 ①:幽灵船没有鬼火(或 A 也被加上了鬼火)");
+            {
+                Vector3 outward, tangent;
+                ShipEndingCutscene.DockAxes(out outward, out tangent);
+                var dock = ShipEndingCutscene.DockPos();
+                float deckY = 4f, halfWidth = 3f;
+                int inside = 0;
+                for (int i = 0; i < ShipEndingCutscene.GhostFireCount; i++)
+                {
+                    var f = ShipEndingCutscene.GhostFireAt(i, dock, deckY, tangent, -outward, halfWidth);
+                    float along = Vector3.Dot(f - dock, tangent);
+                    float across = Vector3.Dot(f - dock, -outward);
+                    if (Mathf.Abs(along) <= 9.01f && Mathf.Abs(across) <= halfWidth * 0.351f &&
+                        Mathf.Abs(f.y - (deckY + 0.12f)) < 0.001f) inside++;
+                }
+                Check(inside == ShipEndingCutscene.GhostFireCount,
+                      "v0.87 ①:鬼火没有全落在甲板范围内(inside=" + inside + "/" +
+                      ShipEndingCutscene.GhostFireCount + ")");
+            }
+
+            // ② 海鸥线开过之后,事件不再抽到;被赶光(presentCount == 0)时才允许回来并免费补一只。
+            int gate = np.IndexOf("if (e == DB.Gull && S.gull.gullFedOnce)", System.StringComparison.Ordinal);
+            int skip = gate >= 0 ? np.IndexOf("if (S.gull.presentCount > 0)", gate, System.StringComparison.Ordinal) : -1;
+            int restore = gate >= 0 ? np.IndexOf("S.gull.presentCount = 1;", gate, System.StringComparison.Ordinal) : -1;
+            int curAt = gate >= 0 ? np.IndexOf("cur = e;", gate, System.StringComparison.Ordinal) : -1;
+            Check(gate >= 0 && skip > gate && restore > skip && curAt > restore &&
+                  Count(np, "S.gull.presentCount = 1;") >= 2 &&
+                  np.IndexOf("它落回岛上,自己留下了", System.StringComparison.Ordinal) >= 0,
+                  "v0.87 ②:海鸥线开后仍会重复抽到海鸥事件(应只在 presentCount == 0 时回来,并免费补一只)");
+
+            // ③ 镜头:斜上方远机位;把骸骨(含 1.8 米高度与四周包络)代进 65° 视锥,确认全在画内。
+            Check(GullEndingCutscene.CamPitch >= 35f && GullEndingCutscene.CamPitch <= 50f &&
+                  GullEndingCutscene.CamDistance >= 10f &&
+                  wl.IndexOf("cam.transform.rotation = Quaternion.Slerp(camStartRot, camEndRot, k);",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.87 ④:海鸥结局镜头不是斜上方固定机位(俯角 " + GullEndingCutscene.CamPitch +
+                  " / 距离 " + GullEndingCutscene.CamDistance + ")");
+            Vector3 a, sky;
+            GullEndingCutscene.Route(out a, out sky);
+            var goal = GullEndingCutscene.CameraGoal(a);
+            var rot = GullEndingCutscene.CameraRotation();
+            Vector3[] offsets =
+            {
+                Vector3.up * 0.2f, Vector3.up * 1.8f,
+                Vector3.right * 0.9f + Vector3.up * 0.9f, Vector3.left * 0.9f + Vector3.up * 0.9f,
+                Vector3.forward * 0.9f + Vector3.up * 0.9f, Vector3.back * 0.9f + Vector3.up * 0.9f
+            };
+            int visible = 0, total = 0;
+            for (int j = 0; j < offsets.Length; j++)
+            {
+                total++;
+                if (InView(a + offsets[j], goal, rot, 16f / 9f, 0.9f)) visible++;
+            }
+            Check(visible == total,
+                  "v0.87 ④:骸骨有 " + (total - visible) + "/" + total + " 个采样点跑出画面(应能看到骸骨全貌)");
+            Check(goal.y > IslandTerrain.GroundY(goal.x, goal.z) + 5f,
+                  "v0.87 ④:斜上方机位埋进地面了(y=" + goal.y.ToString("F2") + ")");
+
+            Debug.Log("[自检] v0.87:幽灵船加深绿 + 5 团甲板鬼火(A 不变);海鸥线开过后不再抽海鸥事件" +
+                      "(被赶光时免费回来);海鸥结局镜头 12 米 / 42° 斜上方,骸骨全貌在画内。");
+        }
+
+        static void V088()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string wl = StripComments(data + "/Scripts/Core/Wildlife.cs");
+
+            // 海鸥朝外海、朝天空飞:方向 = 岛心→骨架落点的径向,终点飞出浪线并抬高 18 米以上;
+            //   离地抬到 `LiftHeight`,转向接整条速度(含 y)才会抬头。(v0.89 已无拖行)
+            Vector3 a, sky;
+            GullEndingCutscene.Route(out a, out sky);
+            var out2 = new Vector2(a.x - IslandTerrain.Center.x, a.z - IslandTerrain.Center.y).normalized;
+            var flyDir = new Vector3(sky.x - a.x, 0f, sky.z - a.z).normalized;
+            float skyR = Vector2.Distance(new Vector2(sky.x, sky.z), IslandTerrain.Center);
+            Check(skyR >= IslandTerrain.WaterR + 10f &&
+                  Vector3.Dot(flyDir, new Vector3(out2.x, 0f, out2.y)) > 0.9f &&
+                  sky.y >= a.y + 18f,
+                  "v0.88 ②:海鸥的终点不在外海上空(应向「岛心 → 骨架落点」的外侧飞、并抬高 18 米以上),实际 " + sky);
+            Check(GullEndingCutscene.LiftHeight >= 2f &&
+                  wl.IndexOf("pos.y = Mathf.Lerp(spot.y, spot.y + LiftHeight, Smooth(liftK));",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.88 ②:离地高度不到 2 米(会擦着沙丘顶飞出去)");
+            Check(wl.IndexOf("var flat = new Vector3(vel.x, 0f, vel.z);", System.StringComparison.Ordinal) >= 0 &&
+                  wl.IndexOf("vel.y = 0f;", System.StringComparison.Ordinal) < 0 &&
+                  wl.IndexOf("gulls[i].rotation = Quaternion.LookRotation(vel.normalized, Vector3.up);",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.88 ②:海鸥转向又只认水平速度了(往天上飞时不会抬头)");
+
+            Debug.Log("[自检] v0.88:海鸥从骨架落点朝外海方向飞、抬高 " + GullEndingCutscene.FlightUp +
+                      " 米(离地 " + GullEndingCutscene.LiftHeight + " 米),爬升时抬头。");
+        }
+
+        static void V089()
+        {
+            // v0.89(用户:"沙上仍看得出被拖过的沟 / 不需要这个,直接被海鸥拉着起飞即可"):
+            //   拖行阶段与拖痕整段删除 —— 源码里不许再出现拖痕系统,也不许再有"沿地面 Lerp"。
+            string wl = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/Wildlife.cs");
+            Check(wl.IndexOf("DragMark", System.StringComparison.Ordinal) < 0 &&
+                  wl.IndexOf("AddMark", System.StringComparison.Ordinal) < 0 &&
+                  wl.IndexOf("MarkColor", System.StringComparison.Ordinal) < 0 &&
+                  wl.IndexOf("MarkWidth", System.StringComparison.Ordinal) < 0,
+                  "v0.89:海鸥结局的地面拖痕又回来了(用户:「不需要这个,直接被海鸥拉着起飞即可」)");
+            Check(wl.IndexOf("Vector3.Lerp(dragStart, pickup", System.StringComparison.Ordinal) < 0 &&
+                  wl.IndexOf("Vector3.Lerp(spot,", System.StringComparison.Ordinal) < 0,
+                  "v0.89:骨架又在地面上被拖行了(应原地被叼起)");
+            // 骨架直接从落点原地抬升:lift 的起点必须是 `spot.y`(不是某个"拾起点")。
+            Check(wl.IndexOf("pos.y = Mathf.Lerp(spot.y, spot.y + LiftHeight, Smooth(liftK));",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.89:骨架没有从原地直接离地(lift 起点写错了)");
+            // 镜头焦点跟着骨架落点走(拖行删除后,焦点不再取路线百分比)。
+            Vector3 a, sky;
+            GullEndingCutscene.Route(out a, out sky);
+            var focus = GullEndingCutscene.CameraFocus(a);
+            Check((focus - (a + Vector3.up * GullEndingCutscene.CamFocusHeight)).sqrMagnitude < 0.0001f,
+                  "v0.89:镜头焦点不在骨架落点上(拖行删除后应收到原地)");
+
+            Debug.Log("[自检] v0.89:海鸥结局不再拖行 —— 骨架原地被叼起、直接离地飞出,地面没有任何拖痕。");
+        }
+
+        static void V090()
+        {
+            string sp = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/ScavengingPhase.cs");
+
+            // ① 载重减速:每占 1 格 −10%,手满(3 格)只有 70%;队友不再有独立折扣。
+            Check(Mathf.Abs(ScavengingPhase.SpeedPenaltyPerSlot - 0.10f) < 0.0001f,
+                  "v0.90 ①:每格减速不是 10%(实际 " + ScavengingPhase.SpeedPenaltyPerSlot + ")");
+            float full = ScavengingPhase.WalkSpeed *
+                         (1f - ScavengingPhase.SpeedPenaltyPerSlot * ScavengingPhase.CarrySlots);
+            Check(Mathf.Abs(full - ScavengingPhase.WalkSpeed * 0.70f) < 0.0001f,
+                  "v0.90 ①:手满时移速不是 70%(实际 " + (full / ScavengingPhase.WalkSpeed) + ")");
+            Check(sp.IndexOf("int usedSlots = carryingTeammate ? CarrySlots : S.UsedCarrySlots();",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("float speed = WalkSpeed * Mathf.Max(0f, 1f - SpeedPenaltyPerSlot * usedSlots);",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ①:移速没有按占用格数统一计算(队友与物品必须同一条算式)");
+            Check(sp.IndexOf("teammateSpeedPenalty", System.StringComparison.Ordinal) < 0,
+                  "v0.90 ①:队友的独立减速又回来了(用户:「捡起队友不再特殊化」)");
+            string bc = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/Data/BalanceConfig.cs");
+            Check(bc.IndexOf("teammateSpeedPenalty", System.StringComparison.Ordinal) < 0,
+                  "v0.90 ①:BalanceConfig 里还留着 teammateSpeedPenalty(第二份状态会说谎)");
+
+            // ② 漏电用现成模型、位置随机、彼此与货都留出距离。
+            //    ⚠ 火焰那一半已被 v0.91 推翻(用户:"只保留火焰即可")⇒ 火不再要求模型,
+            //    "火没有 campfire" 这条由 `V091()` ① 盯着,这里只钉漏电。
+            Check(World.HasModel("scrap") &&
+                  sp.IndexOf("World.PlaceModel(go.transform, \"scrap\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ②:漏电(scrap)还在用纯色方块(没有接具体模型)");
+            Check(sp.IndexOf("UnityEngine.Random.Range(-9f, 9f)", System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("UnityEngine.Random.Range(-0.55f, 0.55f)", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ②:危险物位置没有随机化(仍写死在过道上)");
+            Check(sp.IndexOf("if (Flat2(hp, a.playerSpawn.position) < 9f) continue;",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("if (Flat2(hp, doorPos) < 6.76f) continue;", System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("if (Flat2(hp, hazardSpots[h]) < 7.84f)", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ②:随机危险物没有避开出生点 / 舱门 / 彼此");
+            Check(sp.IndexOf("if (ok) foreach (var hs in hazardSpots) if (Flat2(hs, p) < 2.56f)",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ②:物品还会刷进火焰/漏电里(缺货与危险物的间距)");
+
+            // ③ 颠簸:只动眼睛与相机 roll,不改碰撞/数值;顺序必须在 HandleLook 之后。
+            int look = sp.IndexOf("HandleLook();", System.StringComparison.Ordinal);
+            int turb = sp.IndexOf("ApplyTurbulence();", System.StringComparison.Ordinal);
+            int move = sp.IndexOf("HandleMove();", System.StringComparison.Ordinal);
+            Check(look >= 0 && turb > look && move > turb,
+                  "v0.90 ③:颠簸没有插在转向与移动之间(会被转向覆盖或拖慢移动)");
+            Check(sp.IndexOf("camT.localPosition = new Vector3(", System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("root.cam.transform.localRotation = Quaternion.Euler(0f, 0f, roll);",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("Mathf.PerlinNoise", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ③:飞机颠簸不在了(应只抖眼睛位置 + 相机 roll,用 Perlin 噪声)");
+            int tb0 = sp.IndexOf("void ApplyTurbulence()", System.StringComparison.Ordinal);
+            int tb1 = tb0 >= 0 ? sp.IndexOf("static float Flat2", tb0, System.StringComparison.Ordinal) : -1;
+            Check(tb0 >= 0 && tb1 > tb0 &&
+                  sp.Substring(tb0, tb1 - tb0).IndexOf("cc.", System.StringComparison.Ordinal) < 0,
+                  "v0.90 ③:颠簸改到碰撞/移动上了(它只该演眼睛,不许碰 CharacterController)");
+
+            // ④ 结局 C:死在岛上先推近骸骨,再结算;F 仍当场换屏。
+            string ip = StripComments(UnityEngine.Application.dataPath + "/Scripts/Phases/IslandPhase.cs");
+            Check(ip.IndexOf("void BeginDeathEnding()", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("if (id != EndingId.C) { root.EndRun(id); return; }",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("BonesEndingCutscene.Play(root, transform, spot, () => root.EndRun(EndingId.C));",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ④:死亡结局 C 没有走「推近骸骨 → 回调里 EndRun」这一条");
+            Check(ip.IndexOf("void CheckDeath() { if (S.stats.hp <= 0) BeginDeathEnding(); }",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("if (S.stats.hp <= 0) BeginDeathEnding();", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ④:还有死亡入口在当场换屏(必须统一走 BeginDeathEnding)");
+            string gr = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/GameRoot.cs");
+            Eq(Count(gr, "BonesEndingCutscene.Active"), 2,
+               "v0.90 ④:ApplyIslandView / KeepIslandView 两处都必须认 BonesEndingCutscene.Active");
+            string bn = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/BonesEndingCutscene.cs");
+            Eq(Count(bn, "EndRun"), 0,
+               "v0.90 ④:骸骨过场自己不许写 EndRun(结算只能由调用方回调做一次)");
+            Check(bn.IndexOf("public static bool Active", System.StringComparison.Ordinal) >= 0 &&
+                  bn.IndexOf("void OnDestroy() { Active = false; }", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ④:Active 闸必须在过场销毁时交还");
+            Check(bn.IndexOf("World.PlaceModel(transform, \"skeleton\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ④:骸骨过场没有摆完整骨架");
+            Check(ip.IndexOf("props[i].name == \"bones\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ④:夜里那具旧骸骨没被收起(会和过场骨架叠成两具)");
+            var spot = BonesEndingCutscene.SpotFrom(null);
+            Check(Mathf.Abs(spot.y - IslandTerrain.GroundY(spot.x, spot.z)) < 0.001f,
+                  "v0.90 ④:骸骨落点没有贴地");
+            var goal = BonesEndingCutscene.CameraGoal(spot);
+            var lookAt = BonesEndingCutscene.CameraLookAt(spot);
+            Check(Mathf.Abs(new Vector2(goal.x - spot.x, goal.z - spot.z).magnitude -
+                            BonesEndingCutscene.CamDistance) < 0.01f &&
+                  goal.y > lookAt.y && (lookAt - spot).magnitude < 0.3f,
+                  "v0.90 ④:镜头终点不在骸骨 " + BonesEndingCutscene.CamDistance + " 米外 / 没有看向骸骨");
+            Check(IslandTerrain.Radius(goal.x, goal.z) < IslandTerrain.WaterR,
+                  "v0.90 ④:推近后的镜头站到海里去了");
+
+            // ⑤ B(活满五十天)复用邮轮过场。
+            Check(ShipEndingCutscene.Handles(EndingId.B) &&
+                  ip.IndexOf("if (S.day > B.survivalDaysToEndB) { BeginShipEnding(EndingId.B); return; }",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ⑤:B 没有走轮船获救过场");
+
+            // ⑥ 队友小动作:白天才挂,程序化摆骨节点。
+            string mf = StripComments(UnityEngine.Application.dataPath + "/Scripts/Core/MateFidget.cs");
+            Check(mf.IndexOf("IdleMin", System.StringComparison.Ordinal) >= 0 &&
+                  mf.IndexOf("Random.Range(1, 5)", System.StringComparison.Ordinal) >= 0 &&
+                  mf.IndexOf("act == 2", System.StringComparison.Ordinal) >= 0 &&
+                  mf.IndexOf("act == 3", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ⑥:队友小动作不在了(换重心/挠头/弯腰/走两步)");
+            Check(ip.IndexOf("if (!night && mateGo.GetComponent<MateFidget>() == null)",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("mateGo.AddComponent<MateFidget>();", System.StringComparison.Ordinal) >= 0,
+                  "v0.90 ⑥:队友没有挂上小动作(或夜里也挂了,会和躺姿打架)");
+
+            Debug.Log("[自检] v0.90:拾荒移速按占用格数 −10%/格(手满 70%);危险物随机落位(漏电用 scrap 模型,火焰自 v0.91 起只留火苗);" +
+                      "眼睛有飞机颠簸;B 走轮船过场、C 推近骸骨再结算;队友白天会换重心/挠头/弯腰/走两步。");
+        }
+
+        static void V091()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string sp = StripComments(data + "/Scripts/Phases/ScavengingPhase.cs");
+
+            // ① 拾荒火焰:只留粒子火苗,不再摆 campfire 木堆(漏电仍用 scrap)。
+            Check(sp.IndexOf("campfire", System.StringComparison.Ordinal) < 0,
+                  "v0.91 ①:火焰又摆了篝火模型(用户:「只保留火焰即可」)");
+            Check(sp.IndexOf("var fxHost = model != null ? model : go;", System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("World.Sparks(fxHost, c, fire)", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ①:火焰的 Sparks 没有挂在纯特效宿主上");
+
+            // ② 坠机动画:倒计时归零且人不在舱门区 ⇒ 播完再 EndRun(C);期间控制与倒计时冻结。
+            Eq(Count(sp, "if (S.phase != RunPhase.Scavenging || crashing) return;"), 2,
+               "v0.91 ②:坠机期间 Update / LateUpdate 没有一起停(会边演边扣时间、边收输入)");
+            Check(sp.IndexOf("crashing = true;", System.StringComparison.Ordinal) >= 0 &&
+                  sp.IndexOf("PlaneCrashCutscene.Play(root, transform, () => root.EndRun(EndingId.C));",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ②:坠机没有走「先播动画 → 回调里 EndRun(C)」");
+            string pc = StripComments(data + "/Scripts/Core/PlaneCrashCutscene.cs");
+            Eq(Count(pc, "EndRun"), 0,
+               "v0.91 ②:坠机过场自己写了 EndRun(结算只能由调用方回调做一次)");
+            Check(pc.IndexOf("public static bool Active", System.StringComparison.Ordinal) >= 0 &&
+                  pc.IndexOf("void OnDestroy() { Active = false; }", System.StringComparison.Ordinal) >= 0 &&
+                  pc.IndexOf("Mathf.PerlinNoise", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ②:坠机过场缺 Active 闸 / 抖动(失控镜头不是一笔静态旋转)");
+
+            // ③ 影怪用 ghost、小影怪用 Ghost_Skull(导入名 ghostskull);跳杀只由结算结果触发。
+            Check(System.IO.File.Exists(data + "/Resources/Models/ghost.fbx") &&
+                  System.IO.File.Exists(data + "/Resources/Models/ghostskull.fbx"),
+                  "v0.91 ③:ghost.fbx / Ghost_Skull.fbx(导入名 ghostskull)不在 Resources/Models");
+            Check(World.HasModel("ghost") && World.HasModel("ghostskull"),
+                  "v0.91 ③:ghost / ghostskull 的模型键加载不出来");
+            string ui = StripComments(data + "/Scripts/Core/UiKit.cs");
+            Check(ui.IndexOf("\"skeleton\", \"ghost\", \"ghostskull\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ③:影怪没登记进 ByHeight ⇒ 会按飘开的衣摆(最长边)归一");
+            string ip = StripComments(data + "/Scripts/Phases/IslandPhase.cs");
+            Check(ip.IndexOf("string key = small ? \"ghostskull\" : \"ghost\";", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("if (NightResolver.Current == DB.Shadow || NightResolver.Current == DB.SmallShadow)",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ③:场上那只没有按大小选模型 / 手电筒没有覆盖两种影怪");
+            Check(ip.IndexOf("hit = c.key == \"nothing\" || (c.key == \"hide\" && mazeEscaped != true);",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ③:大影怪的跳杀判据不完整(什么都不做 / 躲被子被抓都要)");
+            Eq(Count(ip, "if (hit) { PlayShadowScare(ev == DB.SmallShadow); return; }"), 2,
+               "v0.91 ③:点击结算与「尝试睡去」两条路都要能触发跳杀");
+            Check(ip.IndexOf("ShadowScareCutscene.Play(root, transform, small ? \"ghostskull\" : \"ghost\", small ? 1.5f : 2.6f,",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ③:跳杀没有把大小影怪接到各自模型");
+            string ss = StripComments(data + "/Scripts/Core/ShadowScareCutscene.cs");
+            Check(ss.IndexOf("public static bool Active", System.StringComparison.Ordinal) >= 0 &&
+                  ss.IndexOf("void OnDestroy() { Active = false; }", System.StringComparison.Ordinal) >= 0 &&
+                  ss.IndexOf("World.PlaceModel(transform, modelKey", System.StringComparison.Ordinal) >= 0 &&
+                  ss.IndexOf("class ShadowVanishFx", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ③:跳杀 / 驱散过场缺 Active 闸、模型或驱散组件");
+            string gr = StripComments(data + "/Scripts/Core/GameRoot.cs");
+            Eq(Count(gr, "ShadowScareCutscene.Active"), 2,
+               "v0.91 ③:跳杀期间镜头没被 ApplyIslandView / KeepIslandView 两处让开");
+
+            // ④ 删掉「引开」:源码、日记表、盘上事件三方都不许再挂着它。
+            string np = StripComments(data + "/Scripts/Phases/NightPhase.cs");
+            Check(np.IndexOf("lure", System.StringComparison.Ordinal) < 0,
+                  "v0.91 ④:NightPhase 里还有「引开」分支");
+            string dl = StripComments(data + "/Scripts/Core/DiaryLines.cs");
+            Check(dl.IndexOf("\"shadow:lure\"", System.StringComparison.Ordinal) < 0 &&
+                  dl.IndexOf("\"smallshadow:flashlight\"", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ④:日记表还留着引开 / 缺小影怪手电筒那句");
+            string bak = StripComments(data + "/Scripts/Editor/DemoAssetBaker.cs");
+            Check(bak.IndexOf("RemoveChoice(\"shadow\", \"lure\");", System.StringComparison.Ordinal) >= 0 &&
+                  bak.IndexOf("Ch(SmallShadow, \"flashlight\"", System.StringComparison.Ordinal) >= 0 &&
+                  DemoAssetBaker.PlayerText.ContainsKey("smallshadow_flashlight"),
+                  "v0.91 ④:菜单①缺「摘掉引开」迁移或小影怪手电筒选项");
+            var shadowEvent = AssetDatabase.LoadAssetAtPath<GameEventSO>("Assets/Data/Events/shadow.asset");
+            bool hasLure = shadowEvent != null && shadowEvent.choices != null &&
+                           shadowEvent.choices.Exists(x => x != null && x.key == "lure");
+            Check(!hasLure,
+                  "v0.91 ④:盘上 shadow 事件还挂着「引开」⇒ 跑一次菜单①(迁移会摘掉引用);跑之前这条红是设计,不是坏");
+            var smallFlash = AssetDatabase.LoadAssetAtPath<GameChoiceSO>(
+                "Assets/Data/Events/Choices/smallshadow_flashlight.asset");
+            Check(smallFlash != null && smallFlash.drainsFlashlight,
+                  "v0.91 ④:盘上 smallshadow_flashlight.asset 不在 / 不耗电 ⇒ 跑一次菜单①");
+
+            // ⑤ 迷宫特殊地形:每张图都要有绿(仅怪物)和橙(仅玩家),且两张掩码仍然走得通。
+            int noGreen = 0, noOrange = 0, badCell = 0, badReserved = 0;
+            int badPlayer = 0, badMonster = 0, tooLong = 0, minSpecial = 99, maxSpecial = 0, total = 0;
+            for (int seed = 0; seed < 200; seed++)
+            {
+                Vector2Int p, e, s;
+                byte[,] special;
+                var open = SnakeMaze.Generate(seed, out p, out e, out s, out special);
+                if (open == null || special == null) { badCell++; continue; }
+                var pw = SnakeMaze.WalkMask(open, special, SnakeMaze.SidePlayer);
+                var mw = SnakeMaze.WalkMask(open, special, SnakeMaze.SideMonster);
+                int green = 0, orange = 0;
+                for (int x = 0; x < SnakeMaze.W; x++)
+                    for (int z = 0; z < SnakeMaze.H; z++)
+                    {
+                        byte v = special[x, z];
+                        if (v != 0 && !open[x, z]) badCell++;
+                        if (v == SnakeMaze.SideMonster) green++;
+                        else if (v == SnakeMaze.SidePlayer) orange++;
+                        else if (v != 0) badCell++;
+                        if (pw[x, z] != (open[x, z] && v != SnakeMaze.SideMonster) ||
+                            mw[x, z] != (open[x, z] && v != SnakeMaze.SidePlayer)) badCell++;
+                    }
+                if (green == 0) noGreen++;
+                if (orange == 0) noOrange++;
+                if (special[p.x, p.y] != 0 || special[e.x, e.y] != 0 || special[s.x, s.y] != 0) badReserved++;
+                int n = green + orange;
+                total += n;
+                if (n < minSpecial) minSpecial = n;
+                if (n > maxSpecial) maxSpecial = n;
+                var pp = SnakeMaze.Path(pw, p, e);
+                if (pp == null) badPlayer++;
+                else if (pp.Count - 1 > 24) tooLong++;
+                if (SnakeMaze.Path(mw, s, p) == null) badMonster++;
+            }
+            Check(noGreen == 0, "v0.91 ⑤:" + noGreen + "/200 张迷宫没有绿色(仅怪物)格");
+            Check(noOrange == 0, "v0.91 ⑤:" + noOrange + "/200 张迷宫没有橙色(仅玩家)格");
+            Check(badCell == 0, "v0.91 ⑤:" + badCell + " 处特殊格非法(落在墙里 / 未知取值 / 掩码方向反了)");
+            Check(badReserved == 0, "v0.91 ⑤:" + badReserved + "/200 张图把起点/出口/蛇起点落成了特殊格");
+            Check(badPlayer == 0, "v0.91 ⑤:" + badPlayer + "/200 张图绿色格把玩家到出口的路堵死了");
+            Check(badMonster == 0, "v0.91 ⑤:" + badMonster + "/200 张图橙色格把怪物到玩家的路堵死了");
+            Check(tooLong == 0, "v0.91 ⑤:" + tooLong + "/200 张图因为绕绿色格把理想路线挤过 24 步");
+            Check(minSpecial >= 6 && maxSpecial <= 16,
+                  "v0.91 ⑤:特殊格数量 " + minSpecial + "~" + maxSpecial + "(应为 6~16;平均 " +
+                  (total / 200f) + ")");
+
+            // ⑥ 更聪明的怪物 + 配色/提示。
+            string sm = StripComments(data + "/Scripts/Core/SnakeMaze.cs");
+            Check(sm.IndexOf("playerVel * AiLookAhead", System.StringComparison.Ordinal) >= 0 &&
+                  sm.IndexOf("AiRepathSeconds", System.StringComparison.Ordinal) >= 0 &&
+                  sm.IndexOf("NearestMonsterCell", System.StringComparison.Ordinal) >= 0 &&
+                  sm.IndexOf("LineClear", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ⑥:怪物没有截击/定期重算/贴边/直线扑那几件(退回了只追当前格)");
+            Check(sm.IndexOf("Path(monsterWalk", System.StringComparison.Ordinal) >= 0 &&
+                  sm.IndexOf("Blocked(playerWalk", System.StringComparison.Ordinal) >= 0 &&
+                  sm.IndexOf("Blocked(monsterWalk", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ⑥:玩家/怪物没有各走各的掩码(特殊地形就不会生效)");
+            Eq(SnakeMaze.CatchDistanceInSpecial, 0.95f,
+               "v0.91 ⑥:橙色格里的判定距离不是 0.95(否则站着不动就是无敌点)");
+            Check(SnakeMaze.MonsterRadius + SnakeMaze.PlayerRadius > SnakeMaze.CatchDistance,
+                  "v0.91 ⑥:两个半径之和没有超过普通判定 ⇒ 0.95 这条放宽失去理由");
+            Check(sm.IndexOf("SnakeMaze.CatchDistanceInSpecial", System.StringComparison.Ordinal) >= 0 &&
+                  ip.IndexOf("SnakeMazeView.DefaultHint", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 ⑥:橙色格判定 / 新提示没有接进视图");
+            Check(SnakeMazeView.MonsterOnlyColor.g > SnakeMazeView.MonsterOnlyColor.r &&
+                  SnakeMazeView.MonsterOnlyColor.g > SnakeMazeView.MonsterOnlyColor.b &&
+                  SnakeMazeView.PlayerOnlyColor.r > SnakeMazeView.PlayerOnlyColor.g &&
+                  SnakeMazeView.PlayerOnlyColor.r > SnakeMazeView.PlayerOnlyColor.b,
+                  "v0.91 ⑥:特殊地形配色不是 绿=仅怪物 / 橙=仅玩家");
+            Check(SnakeMazeView.DefaultHint.Contains("绿色") && SnakeMazeView.DefaultHint.Contains("橙色") &&
+                  SnakeMazeView.ShadowHint.Contains("绿色") && SnakeMazeView.ShadowHint.Contains("橙色"),
+                  "v0.91 ⑥:迷宫提示没有告诉玩家绿色/橙色各是谁能走");
+
+            // 同一种子必须连特殊格一起复现(否则自检与调试的图对不上)。
+            Vector2Int q1, q2, q3, q4, q5, q6;
+            byte[,] sp1, sp2;
+            SnakeMaze.Generate(12345, out q1, out q2, out q3, out sp1);
+            SnakeMaze.Generate(12345, out q4, out q5, out q6, out sp2);
+            bool same = sp1 != null && sp2 != null;
+            if (same)
+                for (int x = 0; x < SnakeMaze.W && same; x++)
+                    for (int z = 0; z < SnakeMaze.H; z++)
+                        if (sp1[x, z] != sp2[x, z]) { same = false; break; }
+            Check(same, "v0.91 ⑤:同一种子给出了两套特殊格(生成器混进了非确定性来源)");
+
+            Debug.Log("[自检] v0.91:拾荒火焰只剩火苗;C 坠机播完再结算;影怪/小影怪用 ghost/ghostskull," +
+                      "被抓住播跳杀、手电筒让它散掉;引开分支已删;迷宫有绿色(仅怪物)/橙色(仅玩家)与更聪明的追击。");
+        }
+
+        // v0.91 补(用户:"UI出问题了,结局出来后没有返回的按钮")。
+        //   ⚠ 这一组钉的是 **"按钮还看得见"**,不是"有没有 Ui.Button" —— 旧位置贴着画布底边,
+        //     窗口/截图把底部裁掉一截就整块消失,而源码检查照样是绿的。
+        static void V092()
+        {
+            string data = UnityEngine.Application.dataPath;
+            string np = StripComments(data + "/Scripts/Phases/NightPhase.cs");
+
+            // ① 结局屏的返回入口接到 EnterTitle(),且不再落在贴底边的那一格。
+            Check(np.IndexOf("Ui.Button(rt, \"again\", \"再走一次那 60 秒\"", System.StringComparison.Ordinal) >= 0 &&
+                  np.IndexOf("() => root.EnterTitle()", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 补 ①:结局屏没有接到 EnterTitle() 的返回按钮");
+            Check(np.IndexOf("new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-180, -500), new Vector2(180, -440)",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.91 补 ①:返回按钮又被摆回贴底边的一格(窗口裁掉底部就整个消失)");
+
+            // ② 键盘兜底:Enter / 小键盘 Enter / Esc 也能回标题;0.5 秒闸挡住过场结束那一下的按键。
+            Check(np.IndexOf("Input.GetKeyDown(KeyCode.Return)", System.StringComparison.Ordinal) >= 0 &&
+                  np.IndexOf("Input.GetKeyDown(KeyCode.KeypadEnter)", System.StringComparison.Ordinal) >= 0 &&
+                  np.IndexOf("Input.GetKeyDown(KeyCode.Escape)", System.StringComparison.Ordinal) >= 0 &&
+                  np.IndexOf("if (shownAt < 0.5f || root == null) return;", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 补 ②:结局屏缺键盘兜底(或 0.5 秒闸)");
+
+            // ③ 坠机过场:挂在阶段身上(EndRun 拆阶段时一起收),回调后自毁。
+            string pc = StripComments(data + "/Scripts/Core/PlaneCrashCutscene.cs");
+            Check(pc.IndexOf("Play(GameRoot root, Transform parent, System.Action onDone)",
+                             System.StringComparison.Ordinal) >= 0 &&
+                  pc.IndexOf("go.transform.SetParent(parent != null ? parent : (root != null ? root.transform : null), false);",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.91 补 ③:坠机过场没有挂到阶段身上(EndRun 拆阶段时收不掉)");
+            Check(pc.IndexOf("if (onDone != null) onDone();", System.StringComparison.Ordinal) >= 0 &&
+                  pc.IndexOf("Destroy(gameObject);", System.StringComparison.Ordinal) >= 0,
+                  "v0.91 补 ③:坠机过场回调后没有自毁(会活到结局屏继续写相机)");
+            string sp = StripComments(data + "/Scripts/Phases/ScavengingPhase.cs");
+            Check(sp.IndexOf("PlaneCrashCutscene.Play(root, transform, () => root.EndRun(EndingId.C));",
+                             System.StringComparison.Ordinal) >= 0,
+                  "v0.91 补 ③:拾荒那一侧没把阶段传进坠机过场");
+
+            Debug.Log("[自检] v0.91 补:结局屏返回按钮挪到尾声之下(底边不再是唯一入口);" +
+                      "Enter/小键盘 Enter/Esc 兜底;坠机过场挂阶段 + 回调后自毁。");
+        }
+
+        // 世界点 p 是否落在相机视锥内(留 `margin` 的边);投影按相机局部 +z = 前、65° 纵 FOV。
+        static bool InView(Vector3 p, Vector3 camPos, Quaternion rot, float aspect, float margin)
+        {
+            var q = Quaternion.Inverse(rot) * (p - camPos);
+            if (q.z <= 0.01f) return false;
+            float tv = Mathf.Tan(Mathf.Deg2Rad * 65f * 0.5f) * margin;
+            float th = tv * aspect;
+            return Mathf.Abs(q.x) / q.z <= th && Mathf.Abs(q.y) / q.z <= tv;
+        }
+
+        static int Count(string s, string what)
+        {
+            int n = 0, i = 0;
+            while ((i = s.IndexOf(what, i, System.StringComparison.Ordinal)) >= 0) { n++; i += what.Length; }
+            return n;
+        }
+
+        // 逐行剔掉 `//` 之后的内容(§11-121:源码扫描先剔注释,注释里点名旧写法不算回潮)。
+        static string StripComments(string path)
+        {
+            var sb = new StringBuilder();
+            foreach (var line in System.IO.File.ReadAllLines(path))
+            {
+                int k = line.IndexOf("//", System.StringComparison.Ordinal);
+                sb.Append(k >= 0 ? line.Substring(0, k) : line).Append('\n');
+            }
+            return sb.ToString();
         }
 
         static void V068()

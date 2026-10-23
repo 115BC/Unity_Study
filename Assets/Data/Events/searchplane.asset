@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: searchplane
   m_EditorClassIdentifier: 
   key: searchplane
-  displayName: "\u641C\u5BFB\u98DE\u673A"
-  description: "\u8FDC\u5904\u6709\u673A\u5F71\u63A0\u8FC7\u3002\u8FD9\u662F\u624B\u7535\u7B52\u552F\u4E00\u7684\u8425\u6551\u5224\u5B9A\u7A97\u53E3\u4E4B\u4E00\u3002"
+  displayName: "\u641C\u5BFB\u76F4\u5347\u673A"
+  description: "\u8FDC\u5904\u6709\u65CB\u7FFC\u58F0\u63A0\u8FC7\u3002\u8FD9\u662F\u624B\u7535\u7B52\u552F\u4E00\u7684\u8425\u6551\u5224\u5B9A\u7A97\u53E3\u4E4B\u4E00\u3002"
   inEventBag: 1
   nightlyIndependentRoll: 0
   priority: 12

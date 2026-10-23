@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   key: medkit
   displayName: "\u533B\u7597\u7BB1"
-  desc: "\u4E00\u6B21\u6027:\u6CBB\u597D \u751F\u75C5/\u53D7\u4F24 \u6216 \u56DE
-    1 \u751F\u547D\u3002"
+  desc: "\u4E00\u6B21\u6027:\u6CBB\u597D \u751F\u75C5,\u5E76\u4E14\u628A\u751F\u547D\u56DE\u6EE1\u3002"
   slots: 2
   cabinMin: 1
   cabinMax: 1

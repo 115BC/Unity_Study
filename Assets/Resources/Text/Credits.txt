@@ -14,9 +14,9 @@ Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Sour
 许可:**CC0 1.0**(公有领域,不要求署名,这里仍然列出来是因为这些模型构成了你看到的那座岛)。
 
 ## 模型 · Quaternius
-生存 / 食物 / 作物 / 动物 / 船 / 怪物 / 武器 / 鱼 / 农场 等包,作者 **Justin(@Quaternius)**。
-我们下载时包内 `License.txt` 写的是 **CC0 1.0**。⚠ 该作者在 2026-08-28 之后改用自定义的 QAL 许可,
-本项目用的是下载时带 CC0 文本的那一批。
+生存 / 食物 / 作物 / 动物 / 船 / 怪物 / 武器 / 鱼 / 农场 / 海盗 等包,作者 **Justin(@Quaternius)**。
+我们下载时包内 `License.txt` 写的是 **CC0 1.0**(海盗包当时没放 `License.txt`,包页 2026-10-22 补证同为 CC0)。
+⚠ 该作者在 2026-08-28 之后改用自定义的 QAL 许可,本项目用的是下载时带 CC0 文本的那一批。
 
 ## 模型 · 渔网
 作者 **cozee4sure**,来自 Sketchfab:
@@ -24,6 +24,14 @@ https://sketchfab.com/3d-models/fishing-net-cbb4bfc4e5654500a70dfe72ffc0ce0a
 许可:**CC BY 4.0** —— 可商用,须署名:
 "fishing net" by cozee4sure, https://creativecommons.org/licenses/by/4.0/
 
+## 模型 · 直升飞机
+作者 **antonmoek**,来自 Sketchfab:
+https://sketchfab.com/3d-models/low-poly-helicopter-5bbed2de9baa4a13a7faa72653b78b64
+许可:**CC BY 4.0** —— 可商用,须署名:
+"Low Poly Helicopter" by antonmoek, https://creativecommons.org/licenses/by/4.0/
+
 ## 模型 · 小动物与蛇
-`Simplistic Low Poly Nature`(acornbringer)与 `Easy Animated Enemy Pack`。
-包内没有许可文件,按 **CC0** 使用(由素材提供者确认)。
+`Easy Animated Enemy Pack`(作者 **Quaternius**):许可 **CC0 1.0**,可再分发。
+`Simplistic Low Poly Nature`(作者 **acornbringer**):许可为 **作者自定义** —— 可免费使用,
+但 **不得再分发素材本身**(所以这个包里的文件没有随本仓库发布)。
+两个包的原页面都没有 `License:` 字段;以上按作者的公开说明记录,不是"一起下载"的推断。

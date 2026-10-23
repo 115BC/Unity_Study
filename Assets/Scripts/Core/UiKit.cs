@@ -310,6 +310,13 @@ namespace SixtySLike
         //   ⚠ 旋转是在**量尺寸之前**做的,所以归一化看到的是躺平之后的包围盒。
         static readonly Dictionary<string, Tuple<Vector3, float>> Placement = new Dictionary<string, Tuple<Vector3, float>>
         {
+            // v0.76(用户:"即使只有这一个也让它'趴着飞',现在是直立的"):`gull.fbx` 的节点链
+            //   CharacterArmature(-90°X) → Birb(-90°X) → Root(+90°X) 净旋转 **-90°X**,
+            //   而模型本体是 Y-up / Z-forward(GlobalSettings UpAxis=1 FrontAxis=2)⇒ 机身那根长轴(Z)
+            //   被转成了世界的竖轴,海鸥就站着。这里补 +90°X 抵消它:机身横过来、头朝 +Z(= `FrontAxis`)。
+            //   ⚠ 右乘(与红线 72 同一条)。v0.76 起海鸥只有 **海鸥线那几只**(海滩上、按 `presentCount` 摆),
+            //     它们没有每帧赋朝向的组件 ⇒ 修正直接加在模型根上即可。
+            { "gull",  Tuple.Create(new Vector3(90f, 0f, 0f), 1.00f) },
             // ⚠ v0.57(用户:"**鱼竿的角度设置为如图的145:180:180**" + Inspector 截图):这三个数是他 **拖出来的最终旋转**,
             //   不是"再补一个增量" ⇒ `rod` 登记在下面的 `Absolute` 里,走 **赋值** 那条路(见 `PlaceModel` 的例外说明)。
             //   历史:v0.52 (-24,18,0) → v0.55 Y+180 → v0.56 Z+180 → 现在直接采用他亲手定的最终值。
@@ -334,14 +341,27 @@ namespace SixtySLike
         //   新增成员前请想清楚:你拿到的是"转多少度"还是"最终是多少度"。
         static readonly HashSet<string> Absolute = new HashSet<string> { "rod" };
 
+        // v0.76:把 `Placement` 里那一组数暴露给自检(海鸥的 +90° 是这一轮修的东西,要能被钉住)。
+        public static bool PlacementEuler(string key, out Vector3 euler)
+        {
+            Tuple<Vector3, float> pl;
+            if (Placement.TryGetValue(key, out pl)) { euler = pl.Item1; return true; }
+            euler = Vector3.zero;
+            return false;
+        }
+
         // ⚠ 临时排查开关(v0.49):每件放出来的模型打一行"原生尺寸 / 目标 / 用了多少倍 / 最终尺寸 / 底面y"。
         //   对数比看截图快 —— 比例问题定完就把它改回 false(一行一件,Play 一次几十条)。
         public static bool FitDebug = true;
 
         // **归一化看身高(Y)的那几件**:人形的原生最长边是"张开的手臂",不是头顶(见 `PlaceModel` 里那条)。
-        // 只有这三件走这条路 —— 狐狸/海鸥/骸骨 那几件的原生最长边就是它们的"长度",按最长边收才对(别顺手加)。
+        // 只有这几件走这条路 —— 狐狸/海鸥/骸骨 那几件的原生最长边就是它们的"长度",按最长边收才对(别顺手加)。
+        // v0.79:A/H 结局过场的乘客(`npc_man` / `npc_woman`)也是人形,同一套规则。
+        // v0.83:海鸥结局那具 **人类骸骨**(`skeleton`,Quaternius Pirate Kit)同样按身高归一。
+        // v0.91:影怪 / 小影怪(`ghost` / `ghostskull`)按身高 —— 它们原生包围盒里最宽的是飘开的衣摆,
+        //   按最长边收会把"人形"做成"一团矮胖的布"。
         static readonly HashSet<string> ByHeight = new HashSet<string>
-        { "mate_pilot", "mate_navigator", "mate_mechanic" };
+        { "mate_pilot", "mate_navigator", "mate_mechanic", "npc_man", "npc_woman", "skeleton", "ghost", "ghostskull" };
 
         // v0.50(用户原话:"1.毯子的缩放改为1:1:1 / 2.钓鱼竿的缩放改为100:100:100,能架在海边吗 / 4.鱼叉改为25:25:25";
         //   我追问这三个数指什么,你选的读法是 **「倍率:100 = 原尺寸」** ⇒ 这几件 **不再归一化到格子**,
@@ -457,8 +477,38 @@ namespace SixtySLike
             return WorldAABB(go, out mn, out mx) ? mx.y : go.transform.position.y;
         }
 
-        // 世界包围盒:把每个网格的本地包围盒 8 个角点乘上它自己的 localToWorldMatrix 再合起来。
+        // 单个渲染器的世界包围盒 —— 一个零件一个盒子,不把整机合在一起。
+        //   v0.83(用户:"直升机的红点还是歪的"):整机 AABB 的 min.x 其实是 **主旋翼** 的翼尖,
+        //   拿它推"尾端 3.5%"永远推不到尾梁上。航行灯必须先缩小到"尾梁那几个节点"再量。
         //   蒙皮模型(动物 / 人)走的是 SkinnedMeshRenderer,`MeshFilter` 那条路拿不到网格,两边都要认。
+        public static bool MeshBounds(Renderer r, out Vector3 min, out Vector3 max)
+        {
+            min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            if (r == null) return false;
+            var skinned = r as SkinnedMeshRenderer;
+            var mesh = skinned != null ? skinned.sharedMesh : null;
+            if (mesh == null)
+            {
+                var mf = r.GetComponent<MeshFilter>();
+                mesh = mf != null ? mf.sharedMesh : null;
+            }
+            if (mesh == null) return false;
+            var b = mesh.bounds;
+            var mtx = r.transform.localToWorldMatrix;
+            for (int c = 0; c < 8; c++)
+            {
+                var p = mtx.MultiplyPoint(new Vector3(
+                    (c & 1) == 0 ? b.min.x : b.max.x,
+                    (c & 2) == 0 ? b.min.y : b.max.y,
+                    (c & 4) == 0 ? b.min.z : b.max.z));
+                min = Vector3.Min(min, p);
+                max = Vector3.Max(max, p);
+            }
+            return true;
+        }
+
+        // 世界包围盒:把每个网格的本地包围盒 8 个角点乘上它自己的 localToWorldMatrix 再合起来。
         public static bool WorldAABB(GameObject root, out Vector3 min, out Vector3 max)
         {
             min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
@@ -467,25 +517,10 @@ namespace SixtySLike
             var rs = root.GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < rs.Length; i++)
             {
-                var skinned = rs[i] as SkinnedMeshRenderer;
-                var mesh = skinned != null ? skinned.sharedMesh : null;
-                if (mesh == null)
-                {
-                    var mf = rs[i].GetComponent<MeshFilter>();
-                    mesh = mf != null ? mf.sharedMesh : null;
-                }
-                if (mesh == null) continue;
-                var b = mesh.bounds;
-                var mtx = rs[i].transform.localToWorldMatrix;
-                for (int c = 0; c < 8; c++)
-                {
-                    var p = mtx.MultiplyPoint(new Vector3(
-                        (c & 1) == 0 ? b.min.x : b.max.x,
-                        (c & 2) == 0 ? b.min.y : b.max.y,
-                        (c & 4) == 0 ? b.min.z : b.max.z));
-                    min = Vector3.Min(min, p);
-                    max = Vector3.Max(max, p);
-                }
+                Vector3 a, b2;
+                if (!MeshBounds(rs[i], out a, out b2)) continue;
+                min = Vector3.Min(min, a);
+                max = Vector3.Max(max, b2);
                 found++;
             }
             return found > 0;
@@ -519,15 +554,43 @@ namespace SixtySLike
             return m;
         }
 
+        // v0.76(用户:"搜寻飞机的动画只有触发的夜里才有"):夜里那盏航行灯要 **不受光** ——
+        //   受光材质在夜里 ambient(0.13)下几乎就是黑的,灯也就不闪了。走与天空板同一个 `Unlit/Color`。
+        static readonly Dictionary<Color, Material> _unlitMats = new Dictionary<Color, Material>();
+
+        public static Material UnlitMat(Color c)
+        {
+            Material m;
+            if (_unlitMats.TryGetValue(c, out m)) return m;
+            var sh = Shader.Find("Unlit/Color");
+            if (sh == null)
+            {
+                Debug.LogError("[60slike] 找不到 Unlit/Color ⇒ 航行灯退回受光材质(夜里会偏暗)。");
+                return Mat(c);
+            }
+            m = new Material(sh);
+            m.color = c;
+            _unlitMats[c] = m;
+            return m;
+        }
+
         // v0.49(用户:"灯光系统在篝火和手电筒再加一下(二者的光)"):运行时加一盏点光。
         //   ⚠ **挂在宿主物体下面** ⇒ `BuildProps` 每轮 Destroy 整批 props 时灯跟着消失,
         //     不需要再开一张"待清理灯光"的名单(那条路迟早会漏)。
         //   shadows 显式关:这盏灯只负责"看着像有火",实时阴影会把场景每一块几何体拖进 shadow pass。
-        public static Light PointLight(GameObject host, Vector3 localPos, Color c, float intensity, float range, bool flicker)
+        // v0.83(用户:"火焰粒子的大小和范围都不对,太大了"):`offset` 是 **世界米**,不是宿主局部单位。
+        //   灶/道具的根节点带着 PlaceModel 乘出来的 0.01~200 倍 localScale,旧写法往 `localPosition`
+        //   一塞,灯就被同一倍率放大到几十米高(篝火的 0.55 变成 109 米)。⇒ 锚点取宿主 AABB 底面中心,
+        //   再沿世界轴加 offset;灯本身仍挂回宿主下面,生命周期不变。
+        public static Light PointLight(GameObject host, Vector3 offset, Color c, float intensity, float range, bool flicker)
         {
             var go = new GameObject("light");
             go.transform.SetParent(host.transform, false);
-            go.transform.localPosition = localPos;
+            Vector3 mn, mx;
+            var anchor = WorldAABB(host, out mn, out mx)
+                ? new Vector3((mn.x + mx.x) * 0.5f, mn.y, (mn.z + mx.z) * 0.5f)
+                : host.transform.position;
+            go.transform.position = anchor + offset;
             var l = go.AddComponent<Light>();
             l.type = LightType.Point;
             l.color = c;
@@ -542,33 +605,54 @@ namespace SixtySLike
         //   特效 = 内置 `ParticleSystem` + **运行时程序化生成的一张圆点贴图** ⇒ 零外部素材、零资产文件、零许可账。
         //   `fire` 只改"怎么动":火往上飘(负重力、寿命长、越飞越小),电火花四处迸(正重力、寿命极短)。
         //   ⚠ **没有可用 shader 时返回 null,调用方必须能收**(见 `SparkMat` 上面那段事故)。
+        // v0.83(用户:"火焰粒子的大小和范围都不对,太大了"):
+        //   根因不是粒子参数,而是 **继承** —— 灶模型的根节点带着 PlaceModel 乘出来的 ~200 倍 localScale,
+        //   粒子系统直接挂在它身上 ⇒ 0.26 米的粒子被放大到 50 米。现在粒子挂在一个 **世界尺度为 1** 的子物体上
+        //   (localScale = 1 / 宿主 lossyScale),尺寸全部按世界米给;起手点也改到 AABB 上:
+        //   火贴在 **底面中心**、电火花围在 **盒子中心**,不再跟宿主枢轴跑。
         public static ParticleSystem Sparks(GameObject host, Color col, bool fire)
         {
             var mat = SparkMat();
             if (mat == null) return null;
 
-            var ps = host.GetComponent<ParticleSystem>();
-            if (ps == null) ps = host.AddComponent<ParticleSystem>();
+            var go = new GameObject("sparks");
+            go.transform.SetParent(host.transform, false);
+            var hs = host.transform.lossyScale;
+            go.transform.localScale = new Vector3(
+                Mathf.Abs(hs.x) > 0.00001f ? 1f / hs.x : 1f,
+                Mathf.Abs(hs.y) > 0.00001f ? 1f / hs.y : 1f,
+                Mathf.Abs(hs.z) > 0.00001f ? 1f / hs.z : 1f);
+            Vector3 mn, mx;
+            if (WorldAABB(host, out mn, out mx))
+            {
+                var c = (mn + mx) * 0.5f;
+                go.transform.position = fire
+                    ? new Vector3(c.x, mn.y + (mx.y - mn.y) * 0.18f, c.z)
+                    : c;
+            }
+            else go.transform.position = host.transform.position;
+
+            var ps = go.AddComponent<ParticleSystem>();
 
             var m = ps.main;
             m.loop = true;
             m.playOnAwake = true;
-            m.maxParticles = 220;
-            m.startLifetime = fire ? new ParticleSystem.MinMaxCurve(0.55f, 1.05f)
-                                   : new ParticleSystem.MinMaxCurve(0.12f, 0.3f);
-            m.startSpeed = fire ? new ParticleSystem.MinMaxCurve(0.5f, 1.1f)
-                                : new ParticleSystem.MinMaxCurve(1.6f, 3.2f);
-            m.startSize = fire ? new ParticleSystem.MinMaxCurve(0.26f, 0.44f)
-                               : new ParticleSystem.MinMaxCurve(0.1f, 0.18f);
+            m.maxParticles = fire ? 150 : 220;
+            m.startLifetime = fire ? new ParticleSystem.MinMaxCurve(0.45f, 0.9f)
+                                   : new ParticleSystem.MinMaxCurve(0.12f, 0.26f);
+            m.startSpeed = fire ? new ParticleSystem.MinMaxCurve(0.35f, 0.8f)
+                                : new ParticleSystem.MinMaxCurve(1.5f, 2.8f);
+            m.startSize = fire ? new ParticleSystem.MinMaxCurve(0.16f, 0.28f)
+                               : new ParticleSystem.MinMaxCurve(0.08f, 0.14f);
             m.startColor = col;
-            m.gravityModifier = fire ? -0.05f : 1.2f;
+            m.gravityModifier = fire ? -0.04f : 1.2f;
 
             var em = ps.emission;
-            em.rateOverTime = fire ? 16f : 7f;
+            em.rateOverTime = fire ? 14f : 6f;
 
             var sh = ps.shape;
             sh.shapeType = ParticleSystemShapeType.Box;
-            sh.scale = new Vector3(0.6f, fire ? 0.3f : 0.6f, 0.6f);
+            sh.scale = new Vector3(fire ? 0.4f : 0.5f, fire ? 0.2f : 0.5f, fire ? 0.4f : 0.5f);
             sh.randomDirectionAmount = fire ? 0.2f : 1f;
 
             var fol = ps.colorOverLifetime;
@@ -582,8 +666,8 @@ namespace SixtySLike
             sol.enabled = fire;
             sol.size = new ParticleSystem.MinMaxCurve(1f, 0.3f);
 
-            var pr = host.GetComponent<ParticleSystemRenderer>();
-            if (pr == null) pr = host.AddComponent<ParticleSystemRenderer>();
+            var pr = go.GetComponent<ParticleSystemRenderer>();
+            if (pr == null) pr = go.AddComponent<ParticleSystemRenderer>();
             pr.material = mat;
             pr.renderMode = ParticleSystemRenderMode.Billboard;
             pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -640,6 +724,28 @@ namespace SixtySLike
             _spark.hideFlags = HideFlags.DontSave;
             Debug.Log("[特效] 粒子材质用 shader:" + sh.name);
             return _spark;
+        }
+
+        static Material _glow;
+
+        // v0.84(用户:"当夜有一轮圆月,亮的发白,刺眼"):月亮的光晕是一张 **正对镜头** 的透明径向渐变,
+        //   不是发光粒子 —— 只在 `weapona` 那一晚摆一块,`island` 层销毁时跟着一起走。
+        //   `Sprites/Default` 自带 Cull Off(从背面看也亮),拿不到就退回粒子材质;都没有就只留月盘。
+        public static Material GlowMat()
+        {
+            if (_glow != null) return _glow;
+            var sh = FirstShader("Sprites/Default", "Particles/Standard Unlit");
+            if (sh == null)
+            {
+                Debug.LogWarning("[特效] 找不到 Glow 用的 shader ⇒ 月亮的晕圈不摆,只剩月盘。");
+                return null;
+            }
+            _glow = new Material(sh);
+            _glow.name = "moon-glow";
+            _glow.mainTexture = DotTexture();
+            if (_glow.HasProperty("_Color")) _glow.color = Color.white;
+            _glow.hideFlags = HideFlags.DontSave;
+            return _glow;
         }
 
         static Shader FirstShader(params string[] names)
@@ -925,6 +1031,25 @@ namespace SixtySLike
             if (src == null) return;
             if (baseIntensity < 0f) baseIntensity = src.intensity;
             src.intensity = baseIntensity * (0.8f + 0.4f * Mathf.PerlinNoise(0f, Time.time * 2.2f));
+        }
+    }
+
+    // v0.76(用户:"搜寻飞机的动画只有触发的夜里才有"):那架剪影 **每一晚都在**(`IslandPhase.BuildProps`
+    //   的 `if (night)` 里无条件加),但 0.10 的暗色贴着地平线飞,不盯着看就不会注意到 —— 玩家只在
+    //   "搜寻飞机"那一晚才会特意抬头。⇒ 给它一盏一闪一闪的红色航行灯,把"它在飞"说清楚。
+    //   纯演出:不参与任何判定,也不改事件的出现频率。
+    public class Blink : MonoBehaviour
+    {
+        public float hz = 1.1f;
+        public float onFraction = 0.55f;
+        Renderer r;
+
+        void Awake() { r = GetComponent<Renderer>(); }
+
+        void Update()
+        {
+            if (r == null) return;
+            r.enabled = Mathf.Repeat(Time.unscaledTime * hz, 1f) < onFraction;
         }
     }
 

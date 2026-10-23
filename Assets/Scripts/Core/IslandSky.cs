@@ -25,6 +25,7 @@ namespace SixtySLike
         Material _origSky;
         CameraClearFlags _origClear;
         Material _sky;
+        Transform _skyPlane;      // v0.76:场景里那块 440×120 的平面天空板(Backdrop/Sky)
         bool _done;
         readonly List<GameObject> _clouds = new List<GameObject>();
 
@@ -57,6 +58,11 @@ namespace SixtySLike
 
             _sky = SkyMaterial();
             if (_sky != null) RenderSettings.skybox = _sky;
+            // v0.76(用户:"第一人称至少把 'Sky' 给隐藏吧"):那块板是 **固定镜头** 的画上去的天;
+            //   第一人称那一侧换成天空盒,板就必须一起收起来 —— 否则走到海边会看见它挡在天空盒前面。
+            //   它由菜单② 建在 `Island/Backdrop/Sky`;场景层缺失时是 null,此处什么都不做。
+            if (root != null && root.islandStage != null)
+                _skyPlane = root.islandStage.transform.Find("Backdrop/Sky");
             BuildClouds();
             ApplyClear(false);
         }
@@ -72,6 +78,9 @@ namespace SixtySLike
             if (root == null || root.cam == null) return;
             var want = firstPerson ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
             if (root.cam.clearFlags != want) root.cam.clearFlags = want;
+            // 只在真的需要换的时候才 SetActive(每帧调用,但每帧只在切换视角那一下才动它)
+            if (_skyPlane != null && _skyPlane.gameObject.activeSelf == firstPerson)
+                _skyPlane.gameObject.SetActive(!firstPerson);
         }
 
         // 「抄当前观感」:场景是 Skybox 环境光模式,`ambientProbe` 就是那套天空的球谐。
@@ -118,7 +127,11 @@ namespace SixtySLike
         {
             if (root == null || root.islandStage == null) return;
             var parent = root.islandStage.transform;
-            var mat = World.Mat(new Color(0.95f, 0.96f, 0.98f));
+            // v0.80(用户截图:"篝火的火焰粒子太大了(还是说生成点错误了?)"):
+            //   天上那块黑椭圆 **不是火**,是这几团云 —— 原来用受光的 `World.Mat`,入夜后环境光一压就变成
+            //   一块深色剪影(而背后的天空板是 `Unlit/Color`,永远亮着),于是读起来像一团飘错位置的烟。
+            //   云是纯演出 ⇒ 与天空板同一条路:不受光,固定一支比天空亮一点的云色。
+            var mat = World.UnlitMat(new Color(0.86f, 0.91f, 0.97f));
             var c = new Vector3(IslandTerrain.Center.x, 0f, IslandTerrain.Center.y);
             for (int i = 0; i < 7; i++)
             {
@@ -187,6 +200,8 @@ namespace SixtySLike
             RenderSettings.ambientLight = _origColor;
             RenderSettings.skybox = _origSky;
             if (root != null && root.cam != null) root.cam.clearFlags = _origClear;
+            // 交还场景:第一人称时收起的那块天空板要重新亮出来(下一局/回固定镜头都靠它)
+            if (_skyPlane != null) _skyPlane.gameObject.SetActive(true);
             for (int i = 0; i < _clouds.Count; i++) if (_clouds[i] != null) Destroy(_clouds[i]);
             _clouds.Clear();
             if (_sky != null) Destroy(_sky);

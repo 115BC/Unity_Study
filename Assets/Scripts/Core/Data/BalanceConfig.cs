@@ -12,7 +12,8 @@ namespace SixtySLike
         //   (LookSeconds / PickSeconds / CarrySlots)。留在 SO 里 = 留一份"资产还是旧数"的第二真源。
         //   已烘出来的 BalanceConfig.asset 里那两行会成为孤儿数据,Unity 下次存场景/资产时自己丢掉。
         public int cabinTotalSlotsMin = 31, cabinTotalSlotsMax = 42;
-        public float teammateSpeedPenalty = 0.3f;
+        // v0.90:`teammateSpeedPenalty`(0.3)删除 —— 移速改成"每占 1 格 -10%",
+        //   队友不再有独立折扣(`ScavengingPhase.SpeedPenaltyPerSlot` 是唯一出处)。
         public int hazardSecondsCost = 2;
         public float exitZoneRadius = 2.2f;
         public float exitZoneRadiusCarrying = 2.53f;   // 扛队友时放大 15%
